@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "mpes-tools"
+version = "0.1.0"
+description = "A set of GUI tools for the analysis of multidimensional photoemission data"
+authors = ["OpenCOMPES team <sed-processor@mpes.science>"]
+readme = "README.md"
+repository = "https://github.com/OpenCOMPES/mpes-tools"
+documentation = "https://opencompes.github.io/mpes-tools/"
+packages = [{include = "mpes_tools", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+
+[build-system]i
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.report]
+omit = [
+    "config.py",
+    "config-3.py",
+]
+
+[tool.ruff]
+include = ["sed/*.py", "tests/*.py"]
+lint.select = [
+    "E", # pycodestyle
+    "W", # pycodestyle
+    "PL", # pylint
+    "F841", # unused variable
+    "F401", # unused imports
+    "ARG", # unused arguments
+]
+lint.ignore = [
+    "E701", # Multiple statements on one line (colon)
+    "PLR0911", # Too many return statements
+    "PLR0912", # Too many branches
+    "PLR0913", # Too many arguments in function definition
+    "PLR0915", # Too many statements
+    "PLR2004", # Magic value used instead of constant
+    "PLR5501", # else-if-used
+    "PLW2901", # redefined-loop-name
+]
+lint.fixable = ["ALL"]
+line-length = 100 # change the default line length number or characters.
+
+[tool.mypy]
+strict = false
+ignore_missing_imports = true
+follow_imports = "silent"
+no_strict_optional = true
+disable_error_code = "import, annotation-unchecked"
