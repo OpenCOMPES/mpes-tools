@@ -7,12 +7,34 @@ readme = "README.md"
 repository = "https://github.com/OpenCOMPES/mpes-tools"
 documentation = "https://opencompes.github.io/mpes-tools/"
 packages = [{include = "mpes_tools", from = "src"}]
+keywords = ["mpes", "arpes", "trarpes", "gui"]
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
 
 
-[build-system]i
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.0.1"
+pytest-cov = ">=3.0.0"
+pytest-xdist = ">=2.5.0"
+pytest-clarity = ">=1.0.1"
+ruff = ">=0.1.7, <0.3.0"
+mypy = ">=1.6.0, <1.10.0"
+pre-commit = ">=3.0.0"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+sphinx = ">=7.1.2"
+sphinx-rtd-theme = ">=1.0.0"
+tomlkit = ">=0.12.0"
+sphinx-autodoc-typehints = ">=1.17.0"
+nbsphinx = ">=0.9.3"
+myst-parser = ">=2.0.0"
+
+[build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
