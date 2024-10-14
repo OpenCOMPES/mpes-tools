@@ -11,7 +11,7 @@ keywords = ["mpes", "arpes", "trarpes", "gui"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -45,7 +45,7 @@ omit = [
 ]
 
 [tool.ruff]
-include = ["sed/*.py", "tests/*.py"]
+include = ["src/mpes-tools/*.py", "tests/*.py"]
 lint.select = [
     "E", # pycodestyle
     "W", # pycodestyle
