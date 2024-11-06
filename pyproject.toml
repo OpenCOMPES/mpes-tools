@@ -12,6 +12,10 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+PyQt5 = "^5.0.0"
+matplotlib = "^3.8.0"
+numpy = "^1.26.1"
+xarray = ">=2023.11.0"
 
 
 [tool.poetry.group.dev.dependencies]

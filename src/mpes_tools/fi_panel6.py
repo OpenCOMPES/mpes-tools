@@ -5,18 +5,12 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QTableWidgetItem, QHBoxLayout, QCheckBox, QWidget
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
 import numpy as np
-from lmfit.models import ExpressionModel,Model
 from lmfit import CompositeModel, Model
-from lmfit.lineshapes import gaussian, step
 import inspect
-from sum_functions import create_sum_function
-from multiplication_function import create_x_function
-from numpy import loadtxt
-from movable_vertical_cursors_graph import MovableCursors
-from make_model import make_model
-from graphs2 import showgraphs
+from .movable_vertical_cursors_graph import MovableCursors
+from .make_model import make_model
+from .graphs2 import showgraphs
 
 
 

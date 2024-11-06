@@ -5,11 +5,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py
-from matplotlib.widgets import CheckButtons, Button
-from matplotlib.patches import Circle
-from matplotlib.lines import Line2D
-from additional_window import GraphWindow
-from color_scale import update_color
+from mpes_tools.additional_window import GraphWindow
 import xarray as xr
 
 
@@ -36,6 +32,8 @@ class MainWindow(QMainWindow):
         self.slider4 = []
         self.sliders = []
         self.slider_labels = []
+
+        plt.ioff()
 
         for i in range(2):
             for j in range(2):
@@ -154,16 +152,8 @@ class MainWindow(QMainWindow):
         self.graph_windows = []
         self.ce=None
 
-    def open_file(self):
-        # Open file dialog to select a .txt file
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open Text File", "", "Text Files (*.txt)")
+        self.show()
 
-        if file_path:
-            # Load data from the file
-            x, y = self.load_data(file_path)
-
-            # Plot the data
-            self.plot_data(x, y)
     def open_graph_energy(self):
         print('energy')
         self.dataet=np.zeros((len(self.axis[0]),len(self.axis[1]),len(self.axis[3])))
@@ -352,36 +342,6 @@ class MainWindow(QMainWindow):
         ax.set_ylabel('Y')
         self.graphs[3].tight_layout()
         self.graphs[3].canvas.draw()
-
-    # def plot_data2(self,x,y,graph):
-    #     graph.clear()
-    #     ax=graph.gca()
-    #     # ax.imshow(y, extent=[x[1][0], x[1][-1], x[0][0], x[0][-1]], origin='lower', cmap='viridis',aspect='auto')
-    #     # c.plot(ax=ax)
-    #     # ax.set_title('Loaded Data')
-    #     ax.set_xlabel('X')
-    #     ax.set_ylabel('Y')
-    #     graph.tight_layout()
-    #     graph.canvas.draw()
-        
-    # def plot_data(self, x, y):
-    #     # Clear previous plot
-        
-    #     for graph in self.graphs:
-    #         graph.clear()
-    #     i=-1
-    #     # Plot the data on each graph
-    #     for graph in self.graphs:
-    #         i+=1
-    #         axis = graph.gca()
-            
-                
-    #         axis.plot(x, y)
-    #         axis.set_title('Loaded Data')
-    #         axis.set_xlabel('X')
-    #         axis.set_ylabel('Y')
-    #         graph.tight_layout()
-    #         graph.canvas.draw()
 
     def load_data(self, file_path):
         # Load data from the text file
