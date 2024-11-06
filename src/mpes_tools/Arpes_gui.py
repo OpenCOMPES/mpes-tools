@@ -7,7 +7,7 @@ import numpy as np
 import h5py
 from mpes_tools.additional_window import GraphWindow
 import xarray as xr
-from .hdf5 import load_h5
+from mpes_tools.hdf5 import load_h5
 
 
 class MainWindow(QMainWindow):
@@ -134,11 +134,11 @@ class MainWindow(QMainWindow):
         file_menu.addAction(open_file_action)
         
         open_graphe_action = QAction("Energy", self)
-        open_graphe_action.triggered.connect(self.open_graph_energy)
+        open_graphe_action.triggered.connect(self.open_graph_kxkydt)
         open_graphy_action = QAction("ky_cut", self)
-        open_graphy_action.triggered.connect(self.open_graph_y_cut)
+        open_graphy_action.triggered.connect(self.open_graph_kyedt)
         open_graphx_action = QAction("kx_cut", self)
-        open_graphx_action.triggered.connect(self.open_graph_x_cut)
+        open_graphx_action.triggered.connect(self.open_graph_kxedt)
         
         menu_bar = self.menuBar()
 
@@ -155,65 +155,33 @@ class MainWindow(QMainWindow):
 
         self.show()
 
-    def open_graph_energy(self):
-        print('energy')
-        self.dataet=np.zeros((len(self.data_array.coords[self.axes[0]]),len(self.data_array.coords[self.axes[1]]),len(self.data_array.coords[self.axes[3]])))
-        # self.axet=np.zeros((len(self.data_array.coords[self.axes[0]]),len(self.data_array.coords[self.axes[1]]),len(self.data_array.coords[self.axes[3]])))
-        self.axet=[self.data_array.coords[self.axes[0]],self.data_array.coords[self.axes[1]],self.data_array.coords[self.axes[3]]]
-        # self.axet[0]=self.data_array.coords[self.axes[0]]
-        # self.axet[1]=self.data_array.coords[self.axes[1]] 
-        # self.axet[2]=self.data_array.coords[self.axes[3]]
-        
-        for i in range(self.slider1[0].value(),self.slider1[0].value()+self.slider2[0].value()+1):
-            self.dataet += self.data_updated[:, :, i,:]
-        # if not self.graph_window:
-        #     self.graph_window = GraphWindow(self.dataet,self.axet,self.slider3[0].value(),self.slider4[0].value())
-        graph_window= GraphWindow(self.dataet,self.axet,self.slider3[0].value(),self.slider4[0].value())
+    def open_graph_kxkydt(self):
+        E1=self.data_array[self.axes[2]][self.slider1[0].value()].item()
+        E2=self.data_array[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()+1].item()
+        data_kxkydt = self.data_array.loc[{self.axes[2]:slice(E1,E2)}].mean(dim=(self.axes[2]))
+        graph_window=GraphWindow(data_kxkydt, self.slider3[0].value(), self.slider4[0].value())
         # Show the graph window
         graph_window.show()
         self.graph_windows.append(graph_window)
-    def open_graph_x_cut(self):
-        self.dataxt=np.zeros((len(self.data_array.coords[self.axes[0]]),len(self.self.data_array.coords[self.axes[2]]),len(self.data_array.coords[self.axes[3]])))
-        # self.axet=np.zeros((len(self.data_array.coords[self.axes[0]]),len(self.data_array.coords[self.axes[1]]),len(self.data_array.coords[self.axes[3]])))
-        self.axxt=[self.data_array.coords[self.axes[0]],self.self.data_array.coords[self.axes[2]],self.data_array.coords[self.axes[3]]]
-        # self.axet[0]=self.data_array.coords[self.axes[0]]
-        # self.axet[1]=self.data_array.coords[self.axes[1]] 
-        # self.axet[2]=self.data_array.coords[self.axes[3]]
-        # print(self.dataxt.shape)
-        for i in range(self.slider1[1].value(),self.slider1[1].value()+self.slider2[1].value()+1):
-            self.dataxt += self.data_updated[:, i, :,:]
-        graph_window = GraphWindow(self.dataxt,self.axxt,self.slider3[1].value(),self.slider4[1].value())
+
+    def open_graph_kxedt(self):
+        ky1=self.data_array[self.axes[1]][self.slider1[1].value()].item()
+        ky2=self.data_array[self.axes[1]][self.slider1[1].value()+self.slider2[1].value()+1].item()
+        data_kxedt = self.data_array.loc[{self.axes[1]:slice(ky1,ky2)}].mean(dim=(self.axes[1]))
+        graph_window = GraphWindow(data_kxedt, self.slider3[1].value(), self.slider4[1].value())
         # Show the graph window
         graph_window.show()
         self.graph_windows.append(graph_window)
-    def open_graph_y_cut(self):
-        self.datayt=np.zeros((len(self.data_array.coords[self.axes[1]]),len(self.self.data_array.coords[self.axes[2]]),len(self.data_array.coords[self.axes[3]])))
-        # self.axet=np.zeros((len(self.data_array.coords[self.axes[0]]),len(self.data_array.coords[self.axes[1]]),len(self.data_array.coords[self.axes[3]])))
-        self.axyt=[self.data_array.coords[self.axes[1]],self.self.data_array.coords[self.axes[2]],self.data_array.coords[self.axes[3]]]
-        # self.axet[0]=self.data_array.coords[self.axes[0]]
-        # self.axet[1]=self.data_array.coords[self.axes[1]] 
-        # self.axet[2]=self.data_array.coords[self.axes[3]]
-        # print(self.dataxt.shape)
-        for i in range(self.slider1[2].value(),self.slider1[2].value()+self.slider2[2].value()+1):
-            self.datayt += self.data_updated[i, :, :,:]
-        graph_window = GraphWindow(self.datayt,self.axyt,self.slider3[2].value(),self.slider4[2].value())
+
+    def open_graph_kyedt(self):
+        kx1=self.data_array[self.axes[0]][self.slider1[2].value()].item()
+        kx2=self.data_array[self.axes[0]][self.slider1[2].value()+self.slider2[2].value()+1].item()
+        data_kyedt = self.data_array.loc[{self.axes[0]:slice(kx1,kx2)}].mean(dim=(self.axes[0]))
+        graph_window = GraphWindow(data_kyedt, self.slider3[2].value(), self.slider4[2].value())
         # Show the graph window
         graph_window.show()
         self.graph_windows.append(graph_window)
-    def open_graph_xy_cut(self):
-        self.datapt=np.zeros((len(self.data_array.coords[self.axes[0]]),len(self.data_array.coords[self.axes[1]]),len(self.data_array.coords[self.axes[3]])))
-        # self.axet=np.zeros((len(self.data_array.coords[self.axes[0]]),len(self.data_array.coords[self.axes[1]]),len(self.data_array.coords[self.axes[3]])))
-        self.axpt=[self.data_array.coords[self.axes[0]],self.data_array.coords[self.axes[1]],self.data_array.coords[self.axes[3]]]
-        # self.axet[0]=self.data_array.coords[self.axes[0]]
-        # self.axet[1]=self.data_array.coords[self.axes[1]] 
-        # self.axet[2]=self.data_array.coords[self.axes[3]]
-        # print(self.dataxt.shape)
-        for i in range(self.slider1[2].value(),self.slider1[2].value()+self.slider2[2].value()+1):
-            self.datayt += self.data_updated[i, :, :,:]
-        graph_window = GraphWindow(self.datayt,self.axyt,self.slider3[2].value(),self.slider4[2].value())
-        # Show the graph window
-        graph_window.show()
-        self.graph_windows.append(graph_window)
+
     def open_file_dialoge(self):
         # Open file dialog to select a .h5 file
         file_path, _ = QFileDialog.getOpenFileName(self, "Open hdf5", "", "h5 Files (*.h5)")
@@ -246,11 +214,6 @@ class MainWindow(QMainWindow):
         self.update_kx(self.slider3[1].value(), self.slider4[1].value(), self.slider3[2].value(), self.slider4[2].value())
         
         self.update_dt(self.slider1[3].value(), self.slider3[3].value(), self.slider2[3].value(), self.slider4[3].value())
-        # Plot the data
-        # self.plot_data2([self.data_array.coords[self.axes[0]],self.data_array.coords[self.axes[1]]],self.data[:,:,100,10],graph[0])
-        # self.plot_data2([self.data_array.coords[self.axes[1]],self.self.data_array.coords[self.axes[2]]],self.data[40,:,:,10],self.ax01,self.fig01,self.canvas01,self.axes[0])
-        # self.plot_data2([self.data_array.coords[self.axes[0]],self.self.data_array.coords[self.axes[2]]],self.data[:,40,:,10],self.ax10,self.fig10,self.canvas10,self.axes[1])
-        # self.plot_data2([self.self.data_array.coords[self.axes[2]],self.data_array.coords[self.axes[3]]],self.data[40,40,:,:],self.ax11,self.fig11,self.canvas11,'time')
     
     def update_energy(self,Energy,dE,te,dte):
         self.ce_state=True

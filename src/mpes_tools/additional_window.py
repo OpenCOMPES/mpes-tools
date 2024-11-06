@@ -6,12 +6,14 @@ import numpy as np
 from matplotlib.patches import Circle
 from matplotlib.lines import Line2D
 
-from .fi_panel6 import MainWindow
+from mpes_tools.fi_panel6 import MainWindow
+
+import xarray as xr
 
 # %matplotlib qt
 
 class GraphWindow(QMainWindow):
-    def __init__(self,data,axis,t,dt):
+    def __init__(self,data_array: xr.DataArray,t,dt):
         global t_final
         super().__init__()
 
@@ -84,8 +86,8 @@ class GraphWindow(QMainWindow):
 
         # Create a figure and canvas for the graph
         
-        self.data_o=data
-        self.axis=axis
+        self.data_o=data_array.data
+        self.axis=[data_array.coords[dim].data for dim in data_array.dims]
         self.dt=dt
         self.datae=np.zeros((len(self.axis[0]),len(self.axis[1])))
         # Plot data
@@ -465,5 +467,4 @@ class GraphWindow(QMainWindow):
         self.integrate_k=integrate_k
         self.put_cursors=put_cursors
         self.remove_cursors=remove_cursors
-        plt.show()
    
