@@ -86,10 +86,9 @@ class GraphWindow(QMainWindow):
 
         # Create a figure and canvas for the graph
         
-        self.data_o=data_array.data
-        self.axis=[data_array.coords[dim].data for dim in data_array.dims]
+        self.data_array=data_array
+        self.axes = data_array.dims
         self.dt=dt
-        self.datae=np.zeros((len(self.axis[0]),len(self.axis[1])))
         # Plot data
         self.plot_graph(t,dt)
         self.ssshow(t,dt)
@@ -156,17 +155,11 @@ class GraphWindow(QMainWindow):
             self.remove_cursors()
     def plot_graph(self,t,dt):
         # Plot on the graph
-        x = [1, 2, 3, 4, 5]
-        y = [2, 3, 5, 7, 11]
-        self.data=np.zeros((len(self.axis[0]),len(self.axis[1])))
-        # self.ax.plot(x, y)
-        for i in range (t,t+dt+1):
-            self.data+= self.data_o[:,:,i]
-        
-        self.axs[0,0].imshow(self.data, extent=[self.axis[1][0], self.axis[1][-1], self.axis[0][0], self.axis[0][-1]], origin='lower', cmap='viridis',aspect='auto')
-        self.axs[0,0].set_title('Sample Graph')
-        self.axs[0,0].set_xlabel('X')
-        self.axs[0,0].set_ylabel('Y')
+        te1=self.data_array[self.axes[2]][t].item()
+        te2=self.data_array[self.axes[2]][t+dt].item()
+        ax = self.axs[0,0]
+
+        self.data_array.loc[{self.axes[2]:slice(te1,te2)}].mean(dim=(self.axes[2])).T.plot(ax=ax)
         self.fig.tight_layout()
         self.canvas.draw()
     
@@ -191,11 +184,8 @@ class GraphWindow(QMainWindow):
         
         f=fit_FD_conv(self.data_o, self.axis, self.square_coords[0][1], self.square_coords[1][1], 0, t_final, self.v1_pixel, self.v2_pixel,self.dt)
         f.show()
+
     def ssshow(self,t,dt):
-        def test(self):
-            print('whatever test')
-        print('show is running')
-        c= self.data.shape[1]// 10 ** (len(str(self.data.shape[1])) - 1)
         
         def put_cursors():
             self.Line1=axe.axvline(x=self.cursorlinev1, color='red', linestyle='--',linewidth=2, label='Vertical Line',picker=10)
@@ -206,45 +196,44 @@ class GraphWindow(QMainWindow):
             self.Line1.remove()
             self.Line2.remove()
             plt.draw()
-            self.fig.canvas.draw()
-                    
+            self.fig.canvas.draw() 
                            
         def integrate_E():
-                self.plote=np.zeros_like(self.data[1,:])
-                self.axs[1,0].clear()
-                plt.draw()
-                x_min = int(min(self.square_coords[1][1], self.square_coords[0][1]))
-                x_max = int(max(self.square_coords[1][1], self.square_coords[0][1])) + 1
-                for i in range(x_min, x_max):
-                    self.plote += self.data[i, :]
-                # if self.square_coords[1][1]<self.square_coords[0][1]:
-                #     for i in range(self.square_coords[1][1],self.square_coords[0][1]+1):
-                #          self.plot+=self.data[i,:]
-                # elif self.square_coords[1][1]>self.square_coords[0][1]:
-                #     for i in range(self.square_coords[0][1],self.square_coords[1][1]+1):
-                #          self.plot+=self.data[i,:]
-                # else: 
-                #     self.plot+=self.data[self.square_coords[0][1],:]
-                                                       
-                self.axs[1, 0].plot(self.axis[1][:],self.plote/abs(self.square_coords[0][1]-self.square_coords[1][1]),color='red') 
+            self.plote=np.zeros_like(self.data[1,:])
+            self.axs[1,0].clear()
+            plt.draw()
+            x_min = int(min(self.square_coords[1][1], self.square_coords[0][1]))
+            x_max = int(max(self.square_coords[1][1], self.square_coords[0][1])) + 1
+            for i in range(x_min, x_max):
+                self.plote += self.data[i, :]
+            # if self.square_coords[1][1]<self.square_coords[0][1]:
+            #     for i in range(self.square_coords[1][1],self.square_coords[0][1]+1):
+            #          self.plot+=self.data[i,:]
+            # elif self.square_coords[1][1]>self.square_coords[0][1]:
+            #     for i in range(self.square_coords[0][1],self.square_coords[1][1]+1):
+            #          self.plot+=self.data[i,:]
+            # else: 
+            #     self.plot+=self.data[self.square_coords[0][1],:]
+                                                    
+            self.axs[1, 0].plot(self.axis[1][:],self.plote/abs(self.square_coords[0][1]-self.square_coords[1][1]),color='red') 
                 
                 # save_data(self.axis[1], plot/abs(self.square_coords[0][1]-self.square_coords[1][1]),"EDC_time="+str(slider_t.val)+"_", [0.42,0.46],self.fig)        
         def integrate_k():
-                self.plotk=np.zeros_like(self.data[:,1])
-                self.axs[0,1].clear()
-                plt.draw()
-                x_min = int(min(self.square_coords[0][0], self.square_coords[1][0]))
-                x_max = int(max(self.square_coords[0][0], self.square_coords[1][0])) + 1
-                for i in range(x_min, x_max):
-                    self.plotk += self.data[:, i]
-                # if self.square_coords[0][0]<self.square_coords[1][0]:
-                #     for i in range(int(self.square_coords[0][0]),int(self.square_coords[1][0])+1):
-                #         self.plot+=self.data[:,i] 
-                # else:    
-                #     for i in range(int(self.square_coords[1][0]),int(self.square_coords[0][0])+1):
-                #         self.plot+=self.data[:,i]
-                self.axs[0, 1].plot(self.plotk/abs(int(self.square_coords[0][0])-int(self.square_coords[1][0])),self.axis[0][:],color='red')
-                # plt.draw()    
+            self.plotk=np.zeros_like(self.data[:,1])
+            self.axs[0,1].clear()
+            plt.draw()
+            x_min = int(min(self.square_coords[0][0], self.square_coords[1][0]))
+            x_max = int(max(self.square_coords[0][0], self.square_coords[1][0])) + 1
+            for i in range(x_min, x_max):
+                self.plotk += self.data[:, i]
+            # if self.square_coords[0][0]<self.square_coords[1][0]:
+            #     for i in range(int(self.square_coords[0][0]),int(self.square_coords[1][0])+1):
+            #         self.plot+=self.data[:,i] 
+            # else:    
+            #     for i in range(int(self.square_coords[1][0]),int(self.square_coords[0][0])+1):
+            #         self.plot+=self.data[:,i]
+            self.axs[0, 1].plot(self.plotk/abs(int(self.square_coords[0][0])-int(self.square_coords[1][0])),self.axis[0][:],color='red')
+            # plt.draw()    
         def box():
                 self.int=np.zeros_like(self.axis[2])
                 self.axs[1,1].clear()
@@ -272,9 +261,7 @@ class GraphWindow(QMainWindow):
                     # print(plot)
                     N=120
                     self.axs[1,1].plot(self.axis[2][0:N],self.int[0:N])  
-      
-        def us(self):
-            update_show(self.slider1.value(),self.slider2.value())                      
+                          
         def update_show(t,dt):
             # print(self.data.shape)
             # print(self.axis[2].shape)
