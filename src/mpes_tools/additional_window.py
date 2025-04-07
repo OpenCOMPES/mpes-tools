@@ -1,33 +1,19 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox, QAction, QFileDialog, QSlider, QGridLayout,QHBoxLayout, QSizePolicy,QLabel
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QCheckBox, QAction, QSlider, QHBoxLayout, QLabel
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import numpy as np
-import h5py
-from matplotlib.widgets import CheckButtons, Button
 from matplotlib.patches import Circle
 from matplotlib.lines import Line2D
 
-# from fit_4d import fit_4d
-# from fit_FD import fit_FD
-# # from FD_conv_fit_6_fixingonce import fit_FD_conv
-# from FD_conv_fit_8_fixing import fit_FD_conv
-# # from FD_conv_fit_9_fixing import fit_FD_conv
-# from FD_conv_fit_10_withLorz import fit_FD_lor_conv
-from save_data import save_data
-from show_graph import show_graph
-# from Keyboard_value import value_cursor
-# from fft_data2 import fft
-# from fit_two_lorentzian_nml import two_lz_fit
-# from fit_two_lor_mirror_time import two_lz_fit
-# from fit_two_asympeak_lor_mirror_time3 import two_lz_fit
-from fi_panel6 import MainWindow
+from mpes_tools.fi_panel6 import MainWindow
+
+import xarray as xr
 
 # %matplotlib qt
 
 class GraphWindow(QMainWindow):
-    def __init__(self,data,axis,t,dt):
+    def __init__(self,data_array: xr.DataArray,t,dt):
         global t_final
         super().__init__()
 
@@ -100,8 +86,8 @@ class GraphWindow(QMainWindow):
 
         # Create a figure and canvas for the graph
         
-        self.data_o=data
-        self.axis=axis
+        self.data_o=data_array.data
+        self.axis=[data_array.coords[dim].data for dim in data_array.dims]
         self.dt=dt
         self.datae=np.zeros((len(self.axis[0]),len(self.axis[1])))
         # Plot data
@@ -481,5 +467,4 @@ class GraphWindow(QMainWindow):
         self.integrate_k=integrate_k
         self.put_cursors=put_cursors
         self.remove_cursors=remove_cursors
-        plt.show()
    

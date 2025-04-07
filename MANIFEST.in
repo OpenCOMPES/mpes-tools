@@ -1,0 +1,4 @@
+prune *
+exclude *
+recursive-include src/mpes-tools *.py
+include pyproject.toml README.md
