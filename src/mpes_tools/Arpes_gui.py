@@ -130,7 +130,7 @@ class MainWindow(QMainWindow):
 
         # Create actions for opening a file and exiting
         open_file_action = QAction("Open File", self)
-        open_file_action.triggered.connect(self.open_file_dialoge)
+        open_file_action.triggered.connect(self.open_file_dialog)
         file_menu.addAction(open_file_action)
         
         open_graphe_action = QAction("Energy", self)
@@ -182,7 +182,7 @@ class MainWindow(QMainWindow):
         graph_window.show()
         self.graph_windows.append(graph_window)
 
-    def open_file_dialoge(self):
+    def open_file_dialog(self):
         # Open file dialog to select a .h5 file
         file_path, _ = QFileDialog.getOpenFileName(self, "Open hdf5", "", "h5 Files (*.h5)")
         print(file_path)
