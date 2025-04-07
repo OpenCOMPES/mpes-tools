@@ -92,12 +92,12 @@ class GraphWindow(QMainWindow):
         # Plot data
         self.plot_graph(t,dt)
         self.ssshow(t,dt)
-        self.slider1.setRange(0,len(self.axis[2])-1)
-        self.plot=np.zeros_like(self.data[1,:])
+        self.slider1.setRange(0,len(self.data_array[self.axes[2]])-1)
+        self.plot=np.zeros_like(self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[1,:])
         
         self.slider1.valueChanged.connect(self.slider1_changed)
         self.slider2.valueChanged.connect(self.slider2_changed)
-        t_final=self.axis[2].shape[0]
+        t_final=self.data_array[self.axes[2]].shape[0]
         
         
         fit_panel_action = QAction('Fit_Panel',self)
@@ -124,6 +124,7 @@ class GraphWindow(QMainWindow):
         self.t=self.slider1.value()
         # self.us()
         # update_show(self.slider1.value(),self.slider2.value())
+
     def slider2_changed(self,value):
         self.slider2_label.setText(str(value))
         self.plot_graph(self.slider1.value(),self.slider2.value())
@@ -132,6 +133,7 @@ class GraphWindow(QMainWindow):
         # self.ssshow(self.slider1.value(),self.slider2.value()).update_show()
         # self.us()
         # update_show(self.slider1.value(),self.slider2.value())
+
     def checkbox_e_changed(self, state):
         if state == Qt.Checked:
             # print("Checkbox is checked")
@@ -139,6 +141,7 @@ class GraphWindow(QMainWindow):
         else:
             # print("Checkbox is unchecked")
             self.update_show(self.slider1.value(),self.slider2.value())
+
     def checkbox_k_changed(self, state):
         if state == Qt.Checked:
             # print("Checkbox is checked")
@@ -146,6 +149,7 @@ class GraphWindow(QMainWindow):
         else:
             # print("Checkbox is unchecked")
             self.update_show(self.slider1.value(),self.slider2.value())
+
     def checkbox_cursors_changed(self, state):
         if state == Qt.Checked:
             self.put_cursors()
@@ -153,6 +157,7 @@ class GraphWindow(QMainWindow):
         else:
             # print("Checkbox is unchecked")
             self.remove_cursors()
+
     def plot_graph(self,t,dt):
         # Plot on the graph
         te1=self.data_array[self.axes[2]][t].item()
@@ -199,13 +204,13 @@ class GraphWindow(QMainWindow):
             self.fig.canvas.draw() 
                            
         def integrate_E():
-            self.plote=np.zeros_like(self.data[1,:])
+            self.plote=np.zeros_like(self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[1,:])
             self.axs[1,0].clear()
             plt.draw()
             x_min = int(min(self.square_coords[1][1], self.square_coords[0][1]))
             x_max = int(max(self.square_coords[1][1], self.square_coords[0][1])) + 1
             for i in range(x_min, x_max):
-                self.plote += self.data[i, :]
+                self.plote += self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[i, :]
             # if self.square_coords[1][1]<self.square_coords[0][1]:
             #     for i in range(self.square_coords[1][1],self.square_coords[0][1]+1):
             #          self.plot+=self.data[i,:]
@@ -215,56 +220,56 @@ class GraphWindow(QMainWindow):
             # else: 
             #     self.plot+=self.data[self.square_coords[0][1],:]
                                                     
-            self.axs[1, 0].plot(self.axis[1][:],self.plote/abs(self.square_coords[0][1]-self.square_coords[1][1]),color='red') 
+            self.axs[1, 0].plot(self.data_array[self.axes[1]][:],self.plote/abs(self.square_coords[0][1]-self.square_coords[1][1]),color='red') 
                 
-                # save_data(self.axis[1], plot/abs(self.square_coords[0][1]-self.square_coords[1][1]),"EDC_time="+str(slider_t.val)+"_", [0.42,0.46],self.fig)        
+                # save_data(self.data_array[self.axes[1]], plot/abs(self.square_coords[0][1]-self.square_coords[1][1]),"EDC_time="+str(slider_t.val)+"_", [0.42,0.46],self.fig)        
         def integrate_k():
-            self.plotk=np.zeros_like(self.data[:,1])
+            self.plotk=np.zeros_like(self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[:,1])
             self.axs[0,1].clear()
             plt.draw()
             x_min = int(min(self.square_coords[0][0], self.square_coords[1][0]))
             x_max = int(max(self.square_coords[0][0], self.square_coords[1][0])) + 1
             for i in range(x_min, x_max):
-                self.plotk += self.data[:, i]
+                self.plotk += self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[:, i]
             # if self.square_coords[0][0]<self.square_coords[1][0]:
             #     for i in range(int(self.square_coords[0][0]),int(self.square_coords[1][0])+1):
             #         self.plot+=self.data[:,i] 
             # else:    
             #     for i in range(int(self.square_coords[1][0]),int(self.square_coords[0][0])+1):
             #         self.plot+=self.data[:,i]
-            self.axs[0, 1].plot(self.plotk/abs(int(self.square_coords[0][0])-int(self.square_coords[1][0])),self.axis[0][:],color='red')
+            self.axs[0, 1].plot(self.plotk/abs(int(self.square_coords[0][0])-int(self.square_coords[1][0])),self.data_array[self.axes[0]][:],color='red')
             # plt.draw()    
         def box():
-                self.int=np.zeros_like(self.axis[2])
+                self.int=np.zeros_like(self.data_array[self.axes[2]])
                 self.axs[1,1].clear()
                 if self.square_coords[1][1]<self.square_coords[0][1]:
                     if self.square_coords[0][0]<self.square_coords[1][0]:
                         for i in range(self.square_coords[1][1],self.square_coords[0][1]+1):
                             for j in range(int(self.square_coords[0][0]),int(self.square_coords[1][0])+1):
-                                self.int+=self.data_o[i,j,:]
+                                self.int+=self.data_array[i,j,:]
                                 
                     else:
                         for i in range(self.square_coords[1][1],self.square_coords[0][1]+1):
                             for j in range(int(self.square_coords[1][0]),int(self.square_coords[0][0])+1):
-                                self.int+=self.data_o[i,j,:]
+                                self.int+=self.data_array[i,j,:]
                 else:
                     if self.square_coords[0][0]<self.square_coords[1][0]:
                         for i in range(self.square_coords[0][1],self.square_coords[1][1]+1):
                             for j in range(int(self.square_coords[0][0]),int(self.square_coords[1][0])+1):
-                                self.int+=self.data_o[i,j,:]
+                                self.int+=self.data_array[i,j,:]
                     else:
                         for i in range(self.square_coords[0][1],self.square_coords[1][1]+1):
                             for j in range(int(self.square_coords[1][0]),int(self.square_coords[0][0])+1):
-                                self.int+=self.data_o[i,j,:]
+                                self.int+=self.data_array[i,j,:]
                 if int(self.square_coords[1][1]) != int(self.square_coords[0][1]) and int(self.square_coords[0][0]) != int(self.square_coords[1][0]):
-                    # self.axs[1,1].plot(plot/np.sqrt((self.square_coords[0][0])-int(self.square_coords[1][0])**2+(self.square_coords[0][1]-self.square_coords[1][1])**2),self.axis[2])
+                    # self.axs[1,1].plot(plot/np.sqrt((self.square_coords[0][0])-int(self.square_coords[1][0])**2+(self.square_coords[0][1]-self.square_coords[1][1])**2),self.data_array[self.axes[2]])
                     # print(plot)
                     N=120
-                    self.axs[1,1].plot(self.axis[2][0:N],self.int[0:N])  
+                    self.axs[1,1].plot(self.data_array[self.axes[2]][0:N],self.int[0:N])  
                           
         def update_show(t,dt):
             # print(self.data.shape)
-            # print(self.axis[2].shape)
+            # print(self.data_array[self.axes[2]].shape)
             # print(self.square_coords)
             # self.data=np.zeros_like(self.data)
             print('update_Shopwwww')
@@ -275,30 +280,30 @@ class GraphWindow(QMainWindow):
             
             # for j in range(t, t+dt+1):
             #     self.data+=self.data_o[:,:,j]
-            im6.set_array(self.data)
+            im6.set_array(self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2])))
             if self.checkbox_e.isChecked() and self.checkbox_k.isChecked() :
                 integrate_E()
                 integrate_k()
             elif self.checkbox_e.isChecked():
                 integrate_E()
-                self.axs[0, 1].plot(self.data[:,int(self.square_coords[0][0])],self.axis[0][:],color='orange') 
-                self.axs[0, 1].plot(self.data[:,int(self.square_coords[1][0])],self.axis[0][:],color='green')
+                self.axs[0, 1].plot(self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[:,int(self.square_coords[0][0])],self.data_array[self.axes[0]][:],color='orange') 
+                self.axs[0, 1].plot(self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[:,int(self.square_coords[1][0])],self.data_array[self.axes[0]][:],color='green')
                 # self.axs[0, 1].plot(self.data[:,int(self.square_coords[0][0])],np.arange(self.data[:,self.square_coords[0][0]].shape[0]),color='orange') 
                 # self.axs[0, 1].plot(self.data[:,int(self.square_coords[1][0])],np.arange(self.data[:,self.square_coords[0][0]].shape[0]),color='green')
             elif self.checkbox_k.isChecked():
                 integrate_k()
-                self.axs[1, 0].plot(self.axis[1][:],self.data[self.square_coords[0][1],:],color='orange')
-                self.axs[1, 0].plot(self.axis[1][:],self.data[self.square_coords[1][1],:],color='green')
+                self.axs[1, 0].plot(self.data_array[self.axes[1]][:],self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[self.square_coords[0][1],:],color='orange')
+                self.axs[1, 0].plot(self.data_array[self.axes[1]][:],self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[self.square_coords[1][1],:],color='green')
             else:
-                self.axs[1, 0].plot(self.axis[1][:],self.data[self.square_coords[0][1],:],color='orange')
-                self.axs[1, 0].plot(self.axis[1][:],self.data[self.square_coords[1][1],:],color='green')
+                self.axs[1, 0].plot(self.data_array[self.axes[1]][:],self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[self.square_coords[0][1],:],color='orange')
+                self.axs[1, 0].plot(self.data_array[self.axes[1]][:],self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[self.square_coords[1][1],:],color='green')
                 # self.axs[0, 1].plot(self.data[:,int(self.square_coords[0][0])],np.arange(self.data[:,int(self.square_coords[0][0])].shape[0]),color='orange') 
                 # self.axs[0, 1].plot(self.data[:,int(self.square_coords[1][0])],np.arange(self.data[:,int(self.square_coords[0][0])].shape[0]),color='green')
-                self.axs[0, 1].plot(self.data[:,int(self.square_coords[0][0])],self.axis[0][:],color='orange') 
-                self.axs[0, 1].plot(self.data[:,int(self.square_coords[1][0])],self.axis[0][:],color='green')
+                self.axs[0, 1].plot(self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[:,int(self.square_coords[0][0])],self.data_array[self.axes[0]][:],color='orange') 
+                self.axs[0, 1].plot(self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2]))[:,int(self.square_coords[1][0])],self.data_array[self.axes[0]][:],color='green')
                 # save_data(self.axs[1], plot/abs(self.square_coords[0][1]-self.square_coords[1][1]),"EDC_time="+str(slider_t.val)+"_", [0.42,0.46],self.fig)
-                # save_data(self.axis[1], self.data[self.square_coords[0][1],:],"yellow, EDC_time="+str(slider_t.val)+"_", [0.42,0.46],self.fig)
-                # save_data(self.axis[1], self.data[self.square_coords[1][1],:],"green, EDC_time="+str(slider_t.val)+"_", [0.46,0.46],self.fig)
+                # save_data(self.data_array[self.axes[1]], self.data[self.square_coords[0][1],:],"yellow, EDC_time="+str(slider_t.val)+"_", [0.42,0.46],self.fig)
+                # save_data(self.data_array[self.axes[1]], self.data[self.square_coords[1][1],:],"green, EDC_time="+str(slider_t.val)+"_", [0.46,0.46],self.fig)
             if self.checkbox_cursors.isChecked():
                 self.Line1=self.axs[1,0].axvline(x=self.cursorlinev1, color='red', linestyle='--',linewidth=2, label='Vertical Line',picker=10)
                 self.Line2=self.axs[1,0].axvline(x=self.cursorlinev2, color='red', linestyle='--',linewidth=2, label='Vertical Line',picker=10)
@@ -308,16 +313,17 @@ class GraphWindow(QMainWindow):
             # line_profile(self.data[self.square_coords[0][1],:], self.axis[3][:],self.fig).line_profile()
             # line_profile(self.data[self.square_coords[0][1],:], self.axis[3][:],self.fig)
             box()
-            time1=self.axis[2][t]
-            timedt1=self.axis[2][t+dt]
+            time1=self.data_array[self.axes[2]][t]
+            timedt1=self.data_array[self.axes[2]][t+dt]
             # print( 'change')
             self.axs[0,0].set_title(f't: {time1:.2f}, t+dt: {timedt1}')
-            im6.set_clim(vmin=self.data.min(), vmax=self.data.max())
+            im6.set_clim(vmin=self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2])).min(), vmax=self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2])).max())
             self.fig.canvas.draw()
             plt.draw() 
  
         
-        im6 = self.axs[0,0].imshow(self.datae, extent=[self.axis[1][0], self.axis[1][-1], self.axis[0][0], self.axis[0][-1]], origin='lower', cmap='viridis',aspect=1)
+        ax = self.axs[0,0]
+        im6 = self.data_array.loc[{self.axes[2]:slice(0,1)}].mean(dim=(self.axes[2])).T.plot(ax=ax)
        
         initial_x = 0
         initial_y = 0
@@ -326,20 +332,20 @@ class GraphWindow(QMainWindow):
         ax=self.axs[0,0]
         axe=self.axs[1,0]
         # Create cursor lines with larger pick radius
-        cursor_vert1 = Line2D([initial_x, initial_x], [-200, len(self.data)+4000], color='yellow', linewidth=2, picker=10,linestyle='--')
-        cursor_horiz1 = Line2D([-200, len(self.data[0])+4000], [initial_y, initial_y], color='yellow', linewidth=2, picker=10,linestyle='--')
-        cursor_vert2 = Line2D([initial_x2, initial_x2], [-200, len(self.data)+4000], color='green', linewidth=2, picker=10,linestyle='--')
-        cursor_horiz2 = Line2D([-200, len(self.data[0])+4000], [initial_y2, initial_y2], color='green', linewidth=2, picker=10,linestyle='--')
+        cursor_vert1 = Line2D([initial_x, initial_x], [-200, len(self.data_array[self.axes[1]])+4000], color='yellow', linewidth=2, picker=10,linestyle='--')
+        cursor_horiz1 = Line2D([-200, len(self.data_array[self.axes[0]])+4000], [initial_y, initial_y], color='yellow', linewidth=2, picker=10,linestyle='--')
+        cursor_vert2 = Line2D([initial_x2, initial_x2], [-200, len(self.data_array[self.axes[1]])+4000], color='green', linewidth=2, picker=10,linestyle='--')
+        cursor_horiz2 = Line2D([-200, len(self.data_array[self.axes[0]])+4000], [initial_y2, initial_y2], color='green', linewidth=2, picker=10,linestyle='--')
         # Create draggable dot at the intersection
         dot1 = Circle((initial_x, initial_y), radius=0.05, color='yellow', picker=10)
         dot2 = Circle((initial_x2, initial_y2), radius=0.05, color='green', picker=10)
         
         if dot1.center[0] is not None and dot1.center[1] is not None and dot2.center[0] is not None and dot2.center[1] is not None:
-            x1_pixel=int((dot1.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-            y1_pixel=int((dot1.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
+            x1_pixel=int((dot1.center[0] - self.data_array[self.axes[1]][0]) / (self.data_array[self.axes[1]][-1] - self.data_array[self.axes[1]][0]) * (self.data_array[self.axes[1]].shape[0] - 1) + 0.5)
+            y1_pixel=int((dot1.center[1] - self.data_array[self.axes[0]][0]) / (self.data_array[self.axes[0]][-1] - self.data_array[self.axes[0]][0]) * (self.data_array[self.axes[0]].shape[0] - 1) + 0.5)
             self.square_coords[0]=(x1_pixel,y1_pixel)
-            x2_pixel=int((dot2.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-            y2_pixel=int((dot2.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
+            x2_pixel=int((dot2.center[0] - self.data_array[self.axes[1]][0]) / (self.data_array[self.axes[1]][-1] - self.data_array[self.axes[1]][0]) * (self.data_array[self.axes[1]].shape[0] - 1) + 0.5)
+            y2_pixel=int((dot2.center[1] - self.data_array[self.axes[0]][0]) / (self.data_array[self.axes[0]][-1] - self.data_array[self.axes[0]][0]) * (self.data_array[self.axes[0]].shape[0] - 1) + 0.5)
             self.square_coords[1]=(x2_pixel,y2_pixel)
         # self.square_coords=[dot1.center,dot2.center]
         # Add cursor lines and dot to the plot
@@ -416,11 +422,11 @@ class GraphWindow(QMainWindow):
                 
                 plt.draw()
                 if dot1.center[0] is not None and dot1.center[1] is not None and dot2.center[0] is not None and dot2.center[1] is not None:
-                    x1_pixel=int((dot1.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-                    y1_pixel=int((dot1.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
+                    x1_pixel=int((dot1.center[0] - self.data_array[self.axes[1]][0]) / (self.data_array[self.axes[1]][-1] - self.data_array[self.axes[1]][0]) * (self.data_array[self.axes[1]].shape[0] - 1) + 0.5)
+                    y1_pixel=int((dot1.center[1] - self.data_array[self.axes[0]][0]) / (self.data_array[self.axes[0]][-1] - self.data_array[self.axes[0]][0]) * (self.data_array[self.axes[0]].shape[0] - 1) + 0.5)
                     self.square_coords[0]=(x1_pixel,y1_pixel)
-                    x2_pixel=int((dot2.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-                    y2_pixel=int((dot2.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
+                    x2_pixel=int((dot2.center[0] - self.data_array[self.axes[1]][0]) / (self.data_array[self.axes[1]][-1] - self.data_array[self.axes[1]][0]) * (self.data_array[self.axes[1]].shape[0] - 1) + 0.5)
+                    y2_pixel=int((dot2.center[1] - self.data_array[self.axes[0]][0]) / (self.data_array[self.axes[0]][-1] - self.data_array[self.axes[0]][0]) * (self.data_array[self.axes[0]].shape[0] - 1) + 0.5)
                     self.square_coords[1]=(x2_pixel,y2_pixel)
                 
                 update_show(self.slider1.value(),self.slider2.value()) 
@@ -436,8 +442,8 @@ class GraphWindow(QMainWindow):
                 # print(self.cursorlinev1,self.cursorlinev2)
                 self.fig.canvas.draw()
                 plt.draw()
-                self.v1_pixel=int((self.cursorlinev1 - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-                self.v2_pixel=int((self.cursorlinev2 - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
+                self.v1_pixel=int((self.cursorlinev1 - self.data_array[self.axes[1]][0]) / (self.data_array[self.axes[1]][-1] - self.data_array[self.axes[1]][0]) * (self.data_array[self.axes[1]].shape[0] - 1) + 0.5)
+                self.v2_pixel=int((self.cursorlinev2 - self.data_array[self.axes[1]][0]) / (self.data_array[self.axes[1]][-1] - self.data_array[self.axes[1]][0]) * (self.data_array[self.axes[1]].shape[0] - 1) + 0.5)
                 # print(self.v1_pixel,self.v2_pixel)
         def on_release(event):
             # global self.active_cursor
