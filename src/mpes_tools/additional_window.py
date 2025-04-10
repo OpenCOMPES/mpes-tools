@@ -24,9 +24,12 @@ class GraphWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         
+        # Create a layout for the central widget
         layout = QVBoxLayout()
         central_widget.setLayout(layout)
         
+        # Create a figure and canvas for the graph
+        plt.ioff()
         self.fig, self.axs = plt.subplots(2,2,figsize=(20,16))
         self.canvas = FigureCanvas(self.fig)
         
@@ -65,48 +68,47 @@ class GraphWindow(QMainWindow):
         slider_layout.addWidget(self.slider2)
         slider_layout.addWidget(self.slider2_label)
         layout.addLayout(slider_layout)
-        # Create a layout for the central widget
+
         self.active_cursor = None
         self.cursorlinev1=1
         self.cursorlinev2=0
-        # self.v1_pixel=None
-        # self.v2_pixel=None
         self.Line1=None
         self.Line2=None
         self.square_artists = []  # To store the artists representing the dots
         self.square_coords = [(0, 0), (0, 0)]  # To store the coordinates of the dots
         self.square_count = 0  # To keep track of the number of dots drawn
         
-        
-        self.cid_press2= None
         self.line_artists=[]
+        self.cid_press1 = None
+        self.cid_press2 = None
         self.cid_press3 = None
         self.cid_press4 = None
-        self.cid_press = None
-
-        # Create a figure and canvas for the graph
         
         self.data=data_array
-        self.axis=[data_array.coords[dim].data for dim in data_array.dims]
+        self.axes=[data_array.coords[dim].data for dim in data_array.dims]
         # print(data_array.dims)
         if technique == 'Phoibos':
-            self.axis[1]=self.axis[1]-21.7
+            self.axes[1]=self.axes[1]-21.7
             self.data = self.data.assign_coords(Ekin=self.data.coords['Ekin'] -21.7)
         
         self.dt=dt
-        # self.datae=np.zeros((len(self.axis[0]),len(self.axis[1])))
-        # Plot data
-        self.data_t=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
-        self.plot_graph(t,dt)
+
+        # Plot 2D data
+        self.data2D=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
+        self.axs[0,0].clear()
+        self.data2D_plot=self.data2D.plot(ax=self.axs[0,0])
+        self.fig.tight_layout()
+
         self.ssshow(t,dt)
-        self.slider1.setRange(0,len(self.axis[2])-1)
+
+        self.slider1.setRange(0,len(self.axes[2])-1)
         self.slider1_label.setText(self.data.dims[2]+": 0")
         self.slider2_label.setText("Δ"+self.data.dims[2]+": 0")
         self.plot=np.zeros_like(self.data[1,:])
         
         self.slider1.valueChanged.connect(self.slider1_changed)
         self.slider2.valueChanged.connect(self.slider2_changed)
-        t_final=self.axis[2].shape[0]
+        t_final=self.axes[2].shape[0]
         
         menu_bar = self.menuBar()
         graph_menu1 = menu_bar.addMenu("Fit Panel")
@@ -131,14 +133,12 @@ class GraphWindow(QMainWindow):
         # self.slider1_label.setText(str(value))
         base = self.slider1_label.text().split(':')[0]
         self.slider1_label.setText(f"{base}: {value}")
-        self.plot_graph(self.slider1.value(),self.slider2.value())
         self.update_show(self.slider1.value(),self.slider2.value())
         self.t=self.slider1.value()
     def slider2_changed(self,value):
         # self.slider2_label.setText(str(value))
         base = self.slider2_label.text().split(':')[0]
         self.slider2_label.setText(f"{base}: {value}")
-        self.plot_graph(self.slider1.value(),self.slider2.value())
         self.update_show(self.slider1.value(),self.slider2.value())
         self.dt=self.slider2.value()
     def checkbox_e_changed(self, state):
@@ -156,17 +156,6 @@ class GraphWindow(QMainWindow):
             self.put_cursors()
         else:
             self.remove_cursors()
-    def plot_graph(self,t,dt):
-        
-        
-        self.axs[0,0].imshow(self.data_t.data, extent=[self.axis[1][0], self.axis[1][-1], self.axis[0][0], self.axis[0][-1]], origin='lower',cmap='terrain',aspect='auto')
-        
-        
-        self.axs[0,0].set_title('Sample Graph')
-        self.axs[0,0].set_xlabel('E-Ef (eV)')
-        self.axs[0,0].set_ylabel('Angle (degrees)')
-        self.fig.tight_layout()
-        self.canvas.draw()
     
     def fit_energy_panel(self,event):
         graph_window=fit_panel(self.data,self.square_coords[0][1], self.square_coords[1][1], self.t, self.dt, self.data.dims[1])
@@ -208,7 +197,7 @@ class GraphWindow(QMainWindow):
             x_min = int(min(self.square_coords[1][1], self.square_coords[0][1]))
             x_max = int(max(self.square_coords[1][1], self.square_coords[0][1])) + 1
     
-            self.data_t.isel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0]).plot(ax=self.axs[1,0])
+            self.data2D.isel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0]).plot(ax=self.axs[1,0])
 
     
         def integrate_k():
@@ -218,10 +207,10 @@ class GraphWindow(QMainWindow):
             x_min = int(min(self.square_coords[0][0], self.square_coords[1][0]))
             x_max = int(max(self.square_coords[0][0], self.square_coords[1][0])) + 1
     
-            self.data_t.isel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1]).plot(ax=self.axs[0,1])
+            self.data2D.isel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1]).plot(ax=self.axs[0,1])
     
         def box():
-            self.int = np.zeros_like(self.axis[2])
+            self.int = np.zeros_like(self.axes[2])
             self.axs[1, 1].clear()
     
             x0, y0 = map(int, self.square_coords[0])
@@ -237,35 +226,32 @@ class GraphWindow(QMainWindow):
                 N = -1
                 
                 self.int.plot(ax=self.axs[1,1])
-                self.dot, = self.axs[1, 1].plot([self.axis[2][self.slider1.value()]], [self.int[self.slider1.value()]], 'ro', markersize=8)
+                self.dot, = self.axs[1, 1].plot([self.axes[2][self.slider1.value()]], [self.int[self.slider1.value()]], 'ro', markersize=8)
                 self.fig.canvas.draw_idle()
-    
-        def us(self):
-            update_show(self.slider1.value(), self.slider2.value())
     
         def update_show(t, dt):
             self.axs[0, 1].clear()
             self.axs[1, 0].clear()
-            self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
-            im6.set_array(self.data_t)
+            self.data2D = self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
+            self.data2D_plot.update({"array": self.data2D.data})
             if self.checkbox_e.isChecked() and self.checkbox_k.isChecked():
                 integrate_E()
                 integrate_k()
             elif self.checkbox_e.isChecked():
                 integrate_E()
-                self.data_t.isel({self.data.dims[1]: int(self.square_coords[0][0])}).plot(ax=self.axs[0, 1], color='orange')
-                self.data_t.isel({self.data.dims[1]:int(self.square_coords[1][0])}).plot(ax=self.axs[0, 1], color='green')
+                self.data2D.isel({self.data.dims[1]: int(self.square_coords[0][0])}).plot(ax=self.axs[0, 1], color='orange')
+                self.data2D.isel({self.data.dims[1]:int(self.square_coords[1][0])}).plot(ax=self.axs[0, 1], color='green')
                 
             elif self.checkbox_k.isChecked():
                 integrate_k()
-                self.data_t.isel({self.data.dims[0]:self.square_coords[0][1]}).plot(ax=self.axs[1, 0], color='orange')
-                self.data_t.isel({self.data.dims[0]:self.square_coords[1][1]}).plot(ax=self.axs[1, 0], color='green')
+                self.data2D.isel({self.data.dims[0]:self.square_coords[0][1]}).plot(ax=self.axs[1, 0], color='orange')
+                self.data2D.isel({self.data.dims[0]:self.square_coords[1][1]}).plot(ax=self.axs[1, 0], color='green')
                 
             else:
-                self.data_t.isel({self.data.dims[0]:self.square_coords[0][1]}).plot(ax=self.axs[1,0],color='orange')
-                self.data_t.isel({self.data.dims[0]:self.square_coords[1][1]}).plot(ax=self.axs[1,0],color='green')
-                self.data_t.isel({self.data.dims[1]:int(self.square_coords[0][0])}).plot(ax=self.axs[0,1],color='orange')
-                self.data_t.isel({self.data.dims[1]:int(self.square_coords[1][0])}).plot(ax=self.axs[0,1],color='green')
+                self.data2D.isel({self.data.dims[0]:self.square_coords[0][1]}).plot(ax=self.axs[1,0],color='orange')
+                self.data2D.isel({self.data.dims[0]:self.square_coords[1][1]}).plot(ax=self.axs[1,0],color='green')
+                self.data2D.isel({self.data.dims[1]:int(self.square_coords[0][0])}).plot(ax=self.axs[0,1],color='orange')
+                self.data2D.isel({self.data.dims[1]:int(self.square_coords[1][0])}).plot(ax=self.axs[0,1],color='green')
                 
     
             if self.checkbox_cursors.isChecked():
@@ -275,15 +261,15 @@ class GraphWindow(QMainWindow):
                 self.fig.canvas.draw()
     
             box()
-            time1 = self.axis[2][t]
-            timedt1 = self.axis[2][t + dt]
+            time1 = self.axes[2][t]
+            timedt1 = self.axes[2][t + dt]
             self.axs[0, 0].set_title(f't: {time1:.2f}, t+dt: {timedt1}')
             self.fig.canvas.draw()
             plt.draw()
         
         self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
         
-        im6 = self.axs[0, 0].imshow(self.data_t.data, extent=[self.axis[1][0], self.axis[1][-1], self.axis[0][0], self.axis[0][-1]], origin='lower',cmap='terrain', aspect='auto')
+        im6 = self.axs[0, 0].imshow(self.data2D.data, extent=[self.axes[1][0], self.axes[1][-1], self.axes[0][0], self.axes[0][-1]], origin='lower',cmap='terrain', aspect='auto')
     
         initial_x = 0
         initial_y = 0
@@ -305,11 +291,11 @@ class GraphWindow(QMainWindow):
         dot2 = Circle((initial_x2, initial_y2), radius=0.05, color='green', picker=10)
     
         if dot1.center[0] is not None and dot1.center[1] is not None and dot2.center[0] is not None and dot2.center[1] is not None:
-            x1_pixel = int((dot1.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-            y1_pixel = int((dot1.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
+            x1_pixel = int((dot1.center[0] - self.axes[1][0]) / (self.axes[1][-1] - self.axes[1][0]) * (self.axes[1].shape[0] - 1) + 0.5)
+            y1_pixel = int((dot1.center[1] - self.axes[0][0]) / (self.axes[0][-1] - self.axes[0][0]) * (self.axes[0].shape[0] - 1) + 0.5)
             self.square_coords[0] = (x1_pixel, y1_pixel)
-            x2_pixel = int((dot2.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-            y2_pixel = int((dot2.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
+            x2_pixel = int((dot2.center[0] - self.axes[1][0]) / (self.axes[1][-1] - self.axes[1][0]) * (self.axes[1].shape[0] - 1) + 0.5)
+            y2_pixel = int((dot2.center[1] - self.axes[0][0]) / (self.axes[0][-1] - self.axes[0][0]) * (self.axes[0].shape[0] - 1) + 0.5)
             self.square_coords[1] = (x2_pixel, y2_pixel)
     
         ax.add_line(cursor_vert1)
@@ -329,9 +315,9 @@ class GraphWindow(QMainWindow):
         axe.axvline(x=100, color='red', linestyle='--',linewidth=2, label='Vertical Line')
         axe.axhline(y=0, color='red', linestyle='--',linewidth=2, label='Horizontal Line')
         axe.axhline(y=100, color='red', linestyle='--',linewidth=2, label='Horizontal Line')
-        plt.draw()
+        #plt.draw()
         update_show(self.slider1.value(),self.slider2.value()) 
-        self.fig.canvas.draw()
+        #self.fig.canvas.draw()
         self.active_cursor = None
         def on_pick(event):
             if event.artist == cursor_vert1:
@@ -379,11 +365,11 @@ class GraphWindow(QMainWindow):
                 
                 plt.draw()
                 if dot1.center[0] is not None and dot1.center[1] is not None and dot2.center[0] is not None and dot2.center[1] is not None:
-                    x1_pixel=int((dot1.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-                    y1_pixel=int((dot1.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
+                    x1_pixel=int((dot1.center[0] - self.axes[1][0]) / (self.axes[1][-1] - self.axes[1][0]) * (self.axes[1].shape[0] - 1) + 0.5)
+                    y1_pixel=int((dot1.center[1] - self.axes[0][0]) / (self.axes[0][-1] - self.axes[0][0]) * (self.axes[0].shape[0] - 1) + 0.5)
                     self.square_coords[0]=(x1_pixel,y1_pixel)
-                    x2_pixel=int((dot2.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-                    y2_pixel=int((dot2.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
+                    x2_pixel=int((dot2.center[0] - self.axes[1][0]) / (self.axes[1][-1] - self.axes[1][0]) * (self.axes[1].shape[0] - 1) + 0.5)
+                    y2_pixel=int((dot2.center[1] - self.axes[0][0]) / (self.axes[0][-1] - self.axes[0][0]) * (self.axes[0].shape[0] - 1) + 0.5)
                     self.square_coords[1]=(x2_pixel,y2_pixel)
                 
                 update_show(self.slider1.value(),self.slider2.value()) 
@@ -397,8 +383,8 @@ class GraphWindow(QMainWindow):
                     self.cursorlinev2= event.xdata
                 self.fig.canvas.draw()
                 plt.draw()
-                self.v1_pixel=int((self.cursorlinev1 - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-                self.v2_pixel=int((self.cursorlinev2 - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
+                self.v1_pixel=int((self.cursorlinev1 - self.axes[1][0]) / (self.axes[1][-1] - self.axes[1][0]) * (self.axes[1].shape[0] - 1) + 0.5)
+                self.v2_pixel=int((self.cursorlinev2 - self.axes[1][0]) / (self.axes[1][-1] - self.axes[1][0]) * (self.axes[1].shape[0] - 1) + 0.5)
         def on_release(event):
             self.active_cursor = None
             
