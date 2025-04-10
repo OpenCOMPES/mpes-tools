@@ -6,7 +6,7 @@ import numpy as np
 from matplotlib.patches import Circle
 from matplotlib.lines import Line2D
 
-from fit_panel import fit_panel
+from mpes_tools.fit_panel import fit_panel
 
 
 import xarray as xr

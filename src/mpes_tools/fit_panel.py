@@ -12,9 +12,9 @@ from lmfit import CompositeModel, Model
 from lmfit.lineshapes import gaussian, step
 import inspect
 from numpy import loadtxt
-from movable_vertical_cursors_graph import MovableCursors
-from make_model import make_model
-from graphs import showgraphs
+from mpes_tools.movable_vertical_cursors_graph import MovableCursors
+from mpes_tools.make_model import make_model
+from mpes_tools.graphs import showgraphs
 from numpy import loadtxt
 # %matplotlib qt
 

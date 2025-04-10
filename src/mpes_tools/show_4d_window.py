@@ -5,9 +5,9 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py
-from additional_window import GraphWindow
+from mpes_tools.additional_window import GraphWindow
 import xarray as xr
-from hdf5 import load_h5
+from mpes_tools.hdf5 import load_h5
 
 
 class show_4d_window(QMainWindow):
