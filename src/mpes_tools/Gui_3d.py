@@ -13,7 +13,7 @@ from mpes_tools.fit_panel import fit_panel
 import xarray as xr
 
 
-class GraphWindow(QMainWindow):  #graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
+class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
     def __init__(self,data_array: xr.DataArray,t,dt,technique):
         global t_final
         super().__init__()
