@@ -95,9 +95,7 @@ class GraphWindow(QMainWindow):
 
         # Plot 2D data
         self.data2D=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
-        self.axs[0,0].clear()
-        self.data2D_plot=self.data2D.plot(ax=self.axs[0,0])
-        self.fig.tight_layout()
+        self.data2D_plot=self.data2D.plot(ax=self.axs[0,0], add_colorbar=False)
 
         self.ssshow(t,dt)
 
@@ -181,32 +179,24 @@ class GraphWindow(QMainWindow):
             # Adjust to use xarray's coords for axis referencing
             self.Line1 = axe.axvline(x=self.cursorlinev1, color='red', linestyle='--', linewidth=2, label='Vertical Line', picker=10)
             self.Line2 = axe.axvline(x=self.cursorlinev2, color='red', linestyle='--', linewidth=2, label='Vertical Line', picker=10)
-            plt.draw()
-            self.fig.canvas.draw()
+            self.fig.canvas.draw_idle()
     
         def remove_cursors():
             self.Line1.remove()
             self.Line2.remove()
-            plt.draw()
-            self.fig.canvas.draw()
+            self.fig.canvas.draw_idle()
     
         def integrate_E():
             self.axs[1, 0].clear()
-            plt.draw()
-    
             x_min = int(min(self.square_coords[1][1], self.square_coords[0][1]))
             x_max = int(max(self.square_coords[1][1], self.square_coords[0][1])) + 1
-    
             self.data2D.isel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0]).plot(ax=self.axs[1,0])
 
     
         def integrate_k():
             self.axs[0, 1].clear()
-            plt.draw()
-    
             x_min = int(min(self.square_coords[0][0], self.square_coords[1][0]))
             x_max = int(max(self.square_coords[0][0], self.square_coords[1][0])) + 1
-    
             self.data2D.isel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1]).plot(ax=self.axs[0,1])
     
         def box():
@@ -234,6 +224,7 @@ class GraphWindow(QMainWindow):
             self.axs[1, 0].clear()
             self.data2D = self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
             self.data2D_plot.update({"array": self.data2D.data})
+            self.data2D_plot.set_clim(vmin=self.data2D.min(), vmax=self.data2D.max())
             if self.checkbox_e.isChecked() and self.checkbox_k.isChecked():
                 integrate_E()
                 integrate_k()
@@ -257,20 +248,15 @@ class GraphWindow(QMainWindow):
             if self.checkbox_cursors.isChecked():
                 self.Line1 = self.axs[1, 0].axvline(x=self.cursorlinev1, color='red', linestyle='--', linewidth=2, label='Vertical Line', picker=10)
                 self.Line2 = self.axs[1, 0].axvline(x=self.cursorlinev2, color='red', linestyle='--', linewidth=2, label='Vertical Line', picker=10)
-                plt.draw()
-                self.fig.canvas.draw()
+                self.fig.canvas.draw_idle()
     
             box()
             time1 = self.axes[2][t]
             timedt1 = self.axes[2][t + dt]
             self.axs[0, 0].set_title(f't: {time1:.2f}, t+dt: {timedt1}')
-            self.fig.canvas.draw()
-            plt.draw()
-        
-        self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
-        
-        im6 = self.axs[0, 0].imshow(self.data2D.data, extent=[self.axes[1][0], self.axes[1][-1], self.axes[0][0], self.axes[0][-1]], origin='lower',cmap='terrain', aspect='auto')
-    
+            self.fig.canvas.draw_idle()
+            self.fig.tight_layout()
+           
         initial_x = 0
         initial_y = 0
         initial_x2 = 0.5
@@ -305,19 +291,12 @@ class GraphWindow(QMainWindow):
         ax.add_line(cursor_horiz2)
         ax.add_patch(dot2)
     
-        ax.set_xlabel('Energy (eV)')
-        ax.set_ylabel('Momentum (1/A)')
-        self.axs[0, 1].set_xlabel('Energy (eV)')
-        self.axs[0, 1].set_ylabel('intensity (a.u.)')
-        initial_xe=1
-        
-        axe.axvline(x=initial_xe, color='red', linestyle='--',linewidth=2, label='Vertical Line')
-        axe.axvline(x=100, color='red', linestyle='--',linewidth=2, label='Vertical Line')
-        axe.axhline(y=0, color='red', linestyle='--',linewidth=2, label='Horizontal Line')
-        axe.axhline(y=100, color='red', linestyle='--',linewidth=2, label='Horizontal Line')
-        #plt.draw()
+        # ax.set_xlabel('Energy (eV)')
+        # ax.set_ylabel('Momentum (1/A)')
+        # self.axs[0, 1].set_xlabel('Energy (eV)')
+        # self.axs[0, 1].set_ylabel('intensity (a.u.)')
+
         update_show(self.slider1.value(),self.slider2.value()) 
-        #self.fig.canvas.draw()
         self.active_cursor = None
         def on_pick(event):
             if event.artist == cursor_vert1:
@@ -360,10 +339,9 @@ class GraphWindow(QMainWindow):
                     dot2.center = (event.xdata, event.ydata)
                     cursor_vert2.set_xdata([event.xdata, event.xdata])
                     cursor_horiz2.set_ydata([event.ydata, event.ydata])
-                self.fig.canvas.draw()
+                self.fig.canvas.draw_idle()
                 
                 
-                plt.draw()
                 if dot1.center[0] is not None and dot1.center[1] is not None and dot2.center[0] is not None and dot2.center[1] is not None:
                     x1_pixel=int((dot1.center[0] - self.axes[1][0]) / (self.axes[1][-1] - self.axes[1][0]) * (self.axes[1].shape[0] - 1) + 0.5)
                     y1_pixel=int((dot1.center[1] - self.axes[0][0]) / (self.axes[0][-1] - self.axes[0][0]) * (self.axes[0].shape[0] - 1) + 0.5)
@@ -381,8 +359,7 @@ class GraphWindow(QMainWindow):
                 elif self.active_cursor == self.Line2:
                     self.Line2.set_xdata([event.xdata, event.xdata])
                     self.cursorlinev2= event.xdata
-                self.fig.canvas.draw()
-                plt.draw()
+                self.fig.canvas.draw_idle()
                 self.v1_pixel=int((self.cursorlinev1 - self.axes[1][0]) / (self.axes[1][-1] - self.axes[1][0]) * (self.axes[1].shape[0] - 1) + 0.5)
                 self.v2_pixel=int((self.cursorlinev2 - self.axes[1][0]) / (self.axes[1][-1] - self.axes[1][0]) * (self.axes[1].shape[0] - 1) + 0.5)
         def on_release(event):
