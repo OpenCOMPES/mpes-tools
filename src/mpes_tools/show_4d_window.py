@@ -5,7 +5,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py
-from mpes_tools.Gui_3d import GraphWindow
+from mpes_tools.Gui_3d import Gui_3d
 import xarray as xr
 from mpes_tools.hdf5 import load_h5
 
@@ -147,7 +147,7 @@ class show_4d_window(QMainWindow):
         E1=self.data_array[self.axes[2]][self.slider1[0].value()].item()
         E2=self.data_array[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()+1].item()
         data_kxkydt = self.data_array.loc[{self.axes[2]:slice(E1,E2)}].mean(dim=(self.axes[2]))
-        graph_window=GraphWindow(data_kxkydt, self.slider3[0].value(), self.slider4[0].value(),'METIS')
+        graph_window=Gui_3d(data_kxkydt, self.slider3[0].value(), self.slider4[0].value(),'METIS')
         # Show the graph window
         graph_window.show()
         self.graph_windows.append(graph_window)
@@ -156,7 +156,7 @@ class show_4d_window(QMainWindow):
         ky1=self.data_array[self.axes[1]][self.slider1[1].value()].item()
         ky2=self.data_array[self.axes[1]][self.slider1[1].value()+self.slider2[1].value()+1].item()
         data_kxedt = self.data_array.loc[{self.axes[1]:slice(ky1,ky2)}].mean(dim=(self.axes[1]))
-        graph_window = GraphWindow(data_kxedt, self.slider3[1].value(), self.slider4[1].value(),'METIS')
+        graph_window = Gui_3d(data_kxedt, self.slider3[1].value(), self.slider4[1].value(),'METIS')
         # Show the graph window
         graph_window.show()
         self.graph_windows.append(graph_window)
@@ -166,7 +166,7 @@ class show_4d_window(QMainWindow):
         kx2=self.data_array[self.axes[0]][self.slider1[2].value()+self.slider2[2].value()+1].item()
         data_kyedt = self.data_array.loc[{self.axes[0]:slice(kx1,kx2)}].mean(dim=(self.axes[0]))
         print(type(data_kyedt))
-        graph_window = GraphWindow(data_kyedt, self.slider3[2].value(), self.slider4[2].value(),'METIS')
+        graph_window = Gui_3d(data_kyedt, self.slider3[2].value(), self.slider4[2].value(),'METIS')
         # Show the graph window
         
         graph_window.show()

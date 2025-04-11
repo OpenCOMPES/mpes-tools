@@ -5,10 +5,10 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py
-from additional_window import GraphWindow
+from mpes_tools.Gui_3d import Gui_3d
 import xarray as xr
-from hdf5 import load_h5
-from show_4d_window import show_4d_window
+from mpes_tools.hdf5 import load_h5
+from mpes_tools.show_4d_window import show_4d_window
 import os
 from PyQt5.QtGui import QPixmap
 
@@ -76,7 +76,7 @@ class ARPES_Analyser(QMainWindow):
         V1 = xr.DataArray(loaded_data['data_array'], dims=['Angle', 'Ekin','delay'], coords={'Angle': loaded_data['Angle'], 'Ekin': loaded_data['Ekin'],'delay': loaded_data['delay']})    
         axis=[V1['Angle'],V1['Ekin']-21.7,V1['delay']]
         # print(data.dims)
-        graph_window= GraphWindow(V1,0,0,'Phoibos')
+        graph_window= Gui_3d(V1,0,0,'Phoibos')
         
         graph_window.show()
         self.graph_windows.append(graph_window)

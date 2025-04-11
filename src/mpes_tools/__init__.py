@@ -1,7 +1,7 @@
 """mpes-tools module easy access APIs."""
 import importlib.metadata
 
-from mpes_tools.show_4d_window import MainWindow
+from mpes_tools.show_4d_window import show_4d_window
 
 __version__ = importlib.metadata.version("mpes-tools")
-__all__ = ["MainWindow"]
+__all__ = ["show_4d_window"]
