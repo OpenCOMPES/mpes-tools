@@ -30,7 +30,7 @@ class Gui_3d(QMainWindow):
         
         self.fig, self.axs = plt.subplots(2,2,figsize=(20,16))
         self.canvas = FigureCanvas(self.fig)
-        
+        # add the checkboxes for EDC and MDC integration and the button to save the results
         self.checkbox_e = QCheckBox("Integrate_energy")
         self.checkbox_e.stateChanged.connect(self.checkbox_e_changed)
         
@@ -40,6 +40,7 @@ class Gui_3d(QMainWindow):
         self.save_button = QPushButton('Save Results', self)
         self.save_button.clicked.connect(self.save_results)
         
+        #create the layout
         h_layout = QHBoxLayout()
         self.cursor_label=[]
         self.cursor_inputs = []
@@ -66,7 +67,6 @@ class Gui_3d(QMainWindow):
         layout.addLayout(h_layout)
         layout.addWidget(self.canvas)
         layout.addWidget(self.save_button)
-        # layout.addWidget(self.checkbox_cursors)
         
         slider_layout= QHBoxLayout()
         self.slider1 = QSlider(Qt.Horizontal)
@@ -89,21 +89,17 @@ class Gui_3d(QMainWindow):
         slider_layout.addWidget(self.slider2_label)
         layout.addLayout(slider_layout)
 
-        
-
-
+        #define the data_array
         self.data=data_array
         self.axis=[data_array.coords[dim].data for dim in data_array.dims]
-        # print(data_array.dims)
         if technique == 'Phoibos':
             self.axis[1]=self.axis[1]-21.7
             self.data = self.data.assign_coords(Ekin=self.data.coords['Ekin'] -21.7)
-        
-        
-        
+
         # define the cut for the spectra of the main graph
         self.data_t=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
         
+        #Initialize the relevant prameters
         self.t=t
         self.dt=dt
         self.active_cursor = None
@@ -119,7 +115,7 @@ class Gui_3d(QMainWindow):
         self.integrated_edc=None
         self.integrated_mdc=None
         
-        
+        # sliders for the delay
         self.slider1.setRange(0,len(self.axis[2])-1)
         self.slider1_label.setText(self.data.dims[2]+": 0")
         self.slider2_label.setText("Δ"+self.data.dims[2]+": 0")
@@ -127,8 +123,10 @@ class Gui_3d(QMainWindow):
         self.slider1.valueChanged.connect(self.slider1_changed)
         self.slider2.valueChanged.connect(self.slider2_changed)
         
+        #run the main code to show the graphs and cursors
         self.show_graphs(t,dt)
         
+        #create a menu for the fit panel
         menu_bar = self.menuBar()
         graph_menu1 = menu_bar.addMenu("Fit Panel")
         
@@ -151,7 +149,7 @@ class Gui_3d(QMainWindow):
 
     
 
-    def save_results(self):
+    def save_results(self):#save the relevant results in a .pkl file which can be accessed easily for Jupyter Notebook workflow
         results = {
             'integrated_edc': self.integrated_edc,
             'integrated_mdc': self.integrated_mdc,
@@ -205,14 +203,6 @@ class Gui_3d(QMainWindow):
             # Update graph logic here
         except ValueError:
             print("Invalid input!")
-    # def change_pixel_to_arrayslot(self):# convert the value of the pixel to the value of the slot in the data
-    #     if self.dot1.center[0] is not None and self.dot1.center[1] is not None and self.dot2.center[0] is not None and self.dot2.center[1] is not None: 
-    #         x1_pixel=int((self.dot1.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-    #         y1_pixel=int((self.dot1.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
-    #         self.square_coords[0]=[x1_pixel,y1_pixel]
-    #         x2_pixel=int((self.dot2.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-    #         y2_pixel=int((self.dot2.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
-    #         self.square_coords[1]=[x2_pixel,y2_pixel]
         
     def slider1_changed(self,value): # change the slider controlling the third dimension
         # self.slider1_label.setText(str(value))
