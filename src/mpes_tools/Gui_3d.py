@@ -12,10 +12,10 @@ from mpes_tools.fit_panel import fit_panel
 
 import xarray as xr
 
-
-class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
+#graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
+# Two vertical cursors and two horizontal cursors are defined in the main graph with each same color for the cursors being horizontal and vertical intercept each other in a dot so one can move either each cursor or the dot itself which will move both cursors. 
+class Gui_3d(QMainWindow):  
     def __init__(self,data_array: xr.DataArray,t,dt,technique):
-        global t_final
         super().__init__()
 
         self.setWindowTitle("Graph Window")
@@ -36,9 +36,6 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
         
         self.checkbox_k = QCheckBox("Integrate_k")
         self.checkbox_k.stateChanged.connect(self.checkbox_k_changed)
-        
-        self.checkbox_cursors = QCheckBox("energy_cursors")
-        self.checkbox_cursors.stateChanged.connect(self.checkbox_cursors_changed)
 
         self.save_button = QPushButton('Save Results', self)
         self.save_button.clicked.connect(self.save_results)
@@ -85,32 +82,16 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
         # self.slider1.setFixedSize(200, 12)  # Change the width and height as needed
         # self.slider2.setFixedSize(200, 12)  # Change the width and height as needed
         
+        # Create a layout for the central widget
         slider_layout.addWidget(self.slider1)
         slider_layout.addWidget(self.slider1_label)
         slider_layout.addWidget(self.slider2)
         slider_layout.addWidget(self.slider2_label)
         layout.addLayout(slider_layout)
-        # Create a layout for the central widget
-        self.active_cursor = None
-        self.cursorlinev1=1
-        self.cursorlinev2=0
-        # self.v1_pixel=None
-        # self.v2_pixel=None
-        self.Line1=None
-        self.Line2=None
-        self.square_artists = []  # To store the artists representing the dots
-        self.square_coords = [[0, 0], [0, 0]]  # To store the coordinates of the dots
-        self.square_count = 0  # To keep track of the number of dots drawn
-        
-        
-        self.cid_press2= None
-        self.line_artists=[]
-        self.cid_press3 = None
-        self.cid_press4 = None
-        self.cid_press = None
 
-        # Create a figure and canvas for the graph
         
+
+
         self.data=data_array
         self.axis=[data_array.coords[dim].data for dim in data_array.dims]
         # print(data_array.dims)
@@ -118,9 +99,19 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
             self.axis[1]=self.axis[1]-21.7
             self.data = self.data.assign_coords(Ekin=self.data.coords['Ekin'] -21.7)
         
+        
+        
+        # define the cut for the spectra of the main graph
+        self.data_t=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
+        
         self.t=t
         self.dt=dt
-        self.data_t=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
+        self.active_cursor = None
+        self.Line1=None
+        self.Line2=None
+        self.square_artists = []  # To store the artists representing the dots
+        self.square_coords = [[0, 0], [0, 0]]  # To store the coordinates of the dots
+        self.square_count = 0  # To keep track of the number of dots drawn
         self.cursor_vert1 = []
         self.cursor_horiz1 = []
         self.cursor_vert2 =[]
@@ -128,15 +119,15 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
         self.integrated_edc=None
         self.integrated_mdc=None
         
-        self.ssshow(t,dt)
+        
         self.slider1.setRange(0,len(self.axis[2])-1)
         self.slider1_label.setText(self.data.dims[2]+": 0")
         self.slider2_label.setText("Δ"+self.data.dims[2]+": 0")
-        self.plot=np.zeros_like(self.data[1,:])
         
         self.slider1.valueChanged.connect(self.slider1_changed)
         self.slider2.valueChanged.connect(self.slider2_changed)
-        t_final=self.axis[2].shape[0]
+        
+        self.show(t,dt)
         
         menu_bar = self.menuBar()
         graph_menu1 = menu_bar.addMenu("Fit Panel")
@@ -182,35 +173,8 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
         # with open('gui_results.json', 'w') as f:
         #     json.dump(results, f)
         print("Results saved!")
-        
-    def results_3d(self):
-        def integrated_edc(self):
-            return self.integrated_edc
-        def integrated_mdc(self):
-            return self.integrated_mdc
-        def yellowline_edc(self):
-            return self.data_t.isel({self.data.dims[0]:self.square_coords[0][1]})
-        def greenline_edc(self):
-            return self.data_t.isel({self.data.dims[0]:self.square_coords[1][1]})
-        def yellowline_mdc(self):
-            return self.data_t.isel({self.data.dims[1]: int(self.square_coords[0][0])})
-        def greenline_mdc(self):
-            return self.data_t.isel({self.data.dims[1]: int(self.square_coords[1][0])})
-        def current_spectra(self):
-            return self.data_t
-        def intensity_box(self):
-            return self.int
-        def yellow_vertical(self):
-            return self.dot1.center[0]
-        def yellow_horizontal(self):
-            return self.dot1.center[1]
-        def green_vertical(self):
-            return self.dot2.center[0]
-        def green_horizontal(self):
-            return self.dot2.center[1]
-        
-        
-    def main_graph_cursor_changed(self, index):
+                  
+    def main_graph_cursor_changed(self, index): #set manually the values for the cursors in the main graph
         value = self.cursor_inputs[index].text()
         value=float(value)
         if index ==0: 
@@ -252,7 +216,6 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
         
     def slider1_changed(self,value): # change the slider controlling the third dimension
         # self.slider1_label.setText(str(value))
-        print(value)
         base = self.slider1_label.text().split(':')[0]
         self.slider1_label.setText(f"{base}: {self.data[self.data.dims[2]][value].item():.2f}")
         self.update_show(self.slider1.value(),self.slider2.value())
@@ -263,22 +226,17 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
         self.slider2_label.setText(f"{base}: {value}")
         self.update_show(self.slider1.value(),self.slider2.value())
         self.dt=self.slider2.value()
-    def checkbox_e_changed(self, state):
-        print(state)
+    def checkbox_e_changed(self, state): # Checkbox for integrating the EDC between the cursors
         if state == Qt.Checked:
             self.integrate_E()
         else:
             self.update_show(self.slider1.value(),self.slider2.value())
-    def checkbox_k_changed(self, state):
+    def checkbox_k_changed(self, state): # Checkbox for integrating the MDC between the cursors
         if state == Qt.Checked:
             self.integrate_k()
         else:
             self.update_show(self.slider1.value(),self.slider2.value())
-    def checkbox_cursors_changed(self, state):
-        if state == Qt.Checked:
-            self.put_cursors()
-        else:
-            self.remove_cursors()
+
     
     def fit_energy_panel(self,event): # open up the fit panel for the EDC 
         graph_window=fit_panel(self.data,self.square_coords[0][1], self.square_coords[1][1], self.t, self.dt, self.data.dims[1])
@@ -294,20 +252,7 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
         self.graph_windows.append(graph_window)
         
     
-    def ssshow(self, t, dt): # This is where the updates after changing the sliders happen
-        
-        def put_cursors(): # add cursors in the EDC graph
-            # Adjust to use xarray's coords for axis referencing
-            self.Line1 = axe.axvline(x=self.cursorlinev1, color='red', linestyle='--', linewidth=2, label='Vertical Line', picker=10)
-            self.Line2 = axe.axvline(x=self.cursorlinev2, color='red', linestyle='--', linewidth=2, label='Vertical Line', picker=10)
-            plt.draw()
-            self.fig.canvas.draw()
-    
-        def remove_cursors(): # remoe cursors in the EDC graph
-            self.Line1.remove()
-            self.Line2.remove()
-            plt.draw()
-            self.fig.canvas.draw()
+    def show(self, t, dt): # This is where the updates after changing the sliders happen
     
         def integrate_E(): # integrate EDC between the two cursors in the main graph
             self.axs[1, 0].clear()
@@ -374,34 +319,27 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
                 self.data_t.isel({self.data.dims[0]:self.square_coords[1][1]}).plot(ax=self.axs[1,0],color='green')
                 self.data_t.isel({self.data.dims[1]:int(self.square_coords[0][0])}).plot(ax=self.axs[0,1],color='orange')
                 self.data_t.isel({self.data.dims[1]:int(self.square_coords[1][0])}).plot(ax=self.axs[0,1],color='green')
-                
-                
-    
-            if self.checkbox_cursors.isChecked():
-                self.Line1 = self.axs[1, 0].axvline(x=self.cursorlinev1, color='red', linestyle='--', linewidth=2, label='Vertical Line', picker=10)
-                self.Line2 = self.axs[1, 0].axvline(x=self.cursorlinev2, color='red', linestyle='--', linewidth=2, label='Vertical Line', picker=10)
-                plt.draw()
-                self.fig.canvas.draw()
-    
-            box()
+            
+            box() # update the intensity box graph
             time1 = self.axis[2][t]
             timedt1 = self.axis[2][t + dt]
-            self.axs[0, 0].set_title(f't: {time1:.2f}, t+dt: {timedt1}')
+            self.axs[0, 0].set_title(f't: {time1:.2f}, t+dt: {timedt1:.2f}')
             self.fig.canvas.draw()
             plt.draw()
    
         # im6 = self.axs[0, 0].imshow(self.data_t.data, extent=[self.axis[1][0], self.axis[1][-1], self.axis[0][0], self.axis[0][-1]], origin='lower',cmap='terrain', aspect='auto')
+        
+        # plot the main graph
         im = self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2]).plot(ax=self.axs[0, 0], cmap='terrain', add_colorbar=False)
         
-        # define the cursors in the main graph
+        # define the initial positions of the cursors in the main graph
         
         initial_x = 0
         initial_y = 0
         initial_x2 = 0.5
         initial_y2 = 0.5
         ax = self.axs[0, 0]
-        axe = self.axs[1, 0]
-    
+        # define the lines for the cursors
         ymin, ymax = self.axs[0, 0].get_ylim()
         xmin, xmax = self.axs[0, 0].get_ylim()
         ymin, ymax = 5 * ymin, 5 * ymax
@@ -411,6 +349,7 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
         self.cursor_vert2 = Line2D([initial_x2, initial_x2], [ymin, ymax], color='green', linewidth=2, picker=10, linestyle='--')
         self.cursor_horiz2 = Line2D([xmin, xmax], [initial_y2, initial_y2], color='green', linewidth=2, picker=10, linestyle='--')
         
+        # show the initial values of the cursors 
         base = self.cursor_label[0].text().split(':')[0]
         self.cursor_label[0].setText(f"{base}: {initial_x:.2f}")
         base = self.cursor_label[1].text().split(':')[0]
@@ -423,28 +362,25 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
         # define the dots that connect the cursors
         self.dot1 = Circle((initial_x, initial_y), radius=0.05, color='yellow', picker=10)
         self.dot2 = Circle((initial_x2, initial_y2), radius=0.05, color='green', picker=10)
-    
-        self.change_pixel_to_arrayslot()
         
-        x_min = int(min(self.square_coords[1][1], self.square_coords[0][1]))
-        x_max = int(max(self.square_coords[1][1], self.square_coords[0][1])) + 1
-        self.integrated_edc=self.data_t.isel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0])
-        x_min = int(min(self.square_coords[0][0], self.square_coords[1][0]))
-        x_max = int(max(self.square_coords[0][0], self.square_coords[1][0])) + 1
-        self.integrated_mdc=self.data_t.isel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1])
-        
+        # add the lines and the cursors to the main graph
         ax.add_line(self.cursor_vert1)
         ax.add_line(self.cursor_horiz1)
         ax.add_patch(self.dot1)
         ax.add_line(self.cursor_vert2)
         ax.add_line(self.cursor_horiz2)
         ax.add_patch(self.dot2)
-        initial_xe=1
+    
+        self.change_pixel_to_arrayslot()
         
-        axe.axvline(x=initial_xe, color='red', linestyle='--',linewidth=2, label='Vertical Line')
-        axe.axvline(x=100, color='red', linestyle='--',linewidth=2, label='Vertical Line')
-        axe.axhline(y=0, color='red', linestyle='--',linewidth=2, label='Horizontal Line')
-        axe.axhline(y=100, color='red', linestyle='--',linewidth=2, label='Horizontal Line')
+        # define the integrated EDC and MDC 
+        x_min = int(min(self.square_coords[1][1], self.square_coords[0][1]))
+        x_max = int(max(self.square_coords[1][1], self.square_coords[0][1])) + 1
+        self.integrated_edc=self.data_t.isel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0])
+        x_min = int(min(self.square_coords[0][0], self.square_coords[1][0]))
+        x_max = int(max(self.square_coords[0][0], self.square_coords[1][0])) + 1
+        self.integrated_mdc=self.data_t.isel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1])
+
         plt.draw()
         update_show(self.slider1.value(),self.slider2.value()) 
         self.fig.canvas.draw()
@@ -511,17 +447,7 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
                 self.change_pixel_to_arrayslot()
                 update_show(self.slider1.value(),self.slider2.value()) 
                
-            elif self.active_cursor is not None and event.inaxes == axe:
-                if self.active_cursor == self.Line1:
-                    self.Line1.set_xdata([event.xdata, event.xdata])
-                    self.cursorlinev1= event.xdata
-                elif self.active_cursor == self.Line2:
-                    self.Line2.set_xdata([event.xdata, event.xdata])
-                    self.cursorlinev2= event.xdata
-                self.fig.canvas.draw()
-                plt.draw()
-                self.v1_pixel=int((self.cursorlinev1 - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-                self.v2_pixel=int((self.cursorlinev2 - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
+            
         def on_release(event):# function to release the selected object
             self.active_cursor = None
             
@@ -533,8 +459,7 @@ class Gui_3d(QMainWindow):  #graphic window showing a 2d map controllable with s
         self.update_show=update_show
         self.integrate_E=integrate_E
         self.integrate_k=integrate_k
-        self.put_cursors=put_cursors
-        self.remove_cursors=remove_cursors
+
 # if __name__ == "__main__":
 #     app = QApplication(sys.argv)
 #     window = GraphWindow()
