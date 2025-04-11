@@ -227,8 +227,7 @@ class show_4d_window(QMainWindow):
         data_avg=self.data_array.loc[{self.axes[2]:slice(E1,E2), self.axes[3]:slice(te1,te2)}].mean(dim=(self.axes[2], self.axes[3]))
         self.im=data_avg.T.plot(ax=ax,cmap='terrain')
         ax.set_title(f'energy: {E1:.2f}, E+dE: {E2:.2f} , t: {te1:.2f}, t+dt: {te2:.2f}')
-        # print(self.data_array.coords[self.axes[0]][self.slider1[1].value()].item())
-        # self.ev = ax.axvline(x=self.data_array.coords[self.axes[0]][self.slider1[1].value()].item(), color='r', linestyle='--')
+        
         self.ev = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
         self.eh = ax.axhline(y=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
         self.pxv = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
