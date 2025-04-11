@@ -127,7 +127,7 @@ class Gui_3d(QMainWindow):
         self.slider1.valueChanged.connect(self.slider1_changed)
         self.slider2.valueChanged.connect(self.slider2_changed)
         
-        self.show(t,dt)
+        self.show_graphs(t,dt)
         
         menu_bar = self.menuBar()
         graph_menu1 = menu_bar.addMenu("Fit Panel")
@@ -197,7 +197,7 @@ class Gui_3d(QMainWindow):
             self.dot2.center = (self.dot2.center[0], value)
             base = self.cursor_label[3].text().split(':')[0]
             self.cursor_label[3].setText(f"{base}: {value:.2f}")
-        self.change_pixel_to_arrayslot()
+        # self.change_pixel_to_arrayslot()
         self.update_show(self.slider1.value(),self.slider2.value())
         try:
             num = float(value)
@@ -205,14 +205,14 @@ class Gui_3d(QMainWindow):
             # Update graph logic here
         except ValueError:
             print("Invalid input!")
-    def change_pixel_to_arrayslot(self):# convert the value of the pixel to the value of the slot in the data
-        if self.dot1.center[0] is not None and self.dot1.center[1] is not None and self.dot2.center[0] is not None and self.dot2.center[1] is not None: 
-            x1_pixel=int((self.dot1.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-            y1_pixel=int((self.dot1.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
-            self.square_coords[0]=[x1_pixel,y1_pixel]
-            x2_pixel=int((self.dot2.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
-            y2_pixel=int((self.dot2.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
-            self.square_coords[1]=[x2_pixel,y2_pixel]
+    # def change_pixel_to_arrayslot(self):# convert the value of the pixel to the value of the slot in the data
+    #     if self.dot1.center[0] is not None and self.dot1.center[1] is not None and self.dot2.center[0] is not None and self.dot2.center[1] is not None: 
+    #         x1_pixel=int((self.dot1.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
+    #         y1_pixel=int((self.dot1.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
+    #         self.square_coords[0]=[x1_pixel,y1_pixel]
+    #         x2_pixel=int((self.dot2.center[0] - self.axis[1][0]) / (self.axis[1][-1] - self.axis[1][0]) * (self.axis[1].shape[0] - 1) + 0.5)
+    #         y2_pixel=int((self.dot2.center[1] - self.axis[0][0]) / (self.axis[0][-1] - self.axis[0][0]) * (self.axis[0].shape[0] - 1) + 0.5)
+    #         self.square_coords[1]=[x2_pixel,y2_pixel]
         
     def slider1_changed(self,value): # change the slider controlling the third dimension
         # self.slider1_label.setText(str(value))
@@ -252,17 +252,17 @@ class Gui_3d(QMainWindow):
         self.graph_windows.append(graph_window)
         
     
-    def show(self, t, dt): # This is where the updates after changing the sliders happen
+    def show_graphs(self, t, dt): # This is where the updates after changing the sliders happen
     
         def integrate_E(): # integrate EDC between the two cursors in the main graph
             self.axs[1, 0].clear()
             plt.draw()
     
-            x_min = int(min(self.square_coords[1][1], self.square_coords[0][1]))
-            x_max = int(max(self.square_coords[1][1], self.square_coords[0][1])) + 1
+            x_min = int(min(self.dot2.center[1], self.dot1.center[1]))
+            x_max = int(max(self.dot2.center[1], self.dot1.center[1])) + 1
     
             # self.data_t.isel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0]).plot(ax=self.axs[1,0])
-            self.integrated_edc=self.data_t.isel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0])
+            self.integrated_edc=self.data_t.sel({self.data.dims[0]:slice(x_min, x_max)}, method='nearest').sum(dim=self.data.dims[0])
             self.integrated_edc.plot(ax=self.axs[1,0])
             self.fig.canvas.draw()
     
@@ -270,26 +270,28 @@ class Gui_3d(QMainWindow):
             self.axs[0, 1].clear()
             plt.draw()
     
-            x_min = int(min(self.square_coords[0][0], self.square_coords[1][0]))
-            x_max = int(max(self.square_coords[0][0], self.square_coords[1][0])) + 1
+            x_min = int(min(self.dot1.center[0], self.dot2.center[0]))
+            x_max = int(max(self.dot1.center[0], self.dot2.center[0])) + 1
     
             # self.data_t.isel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1]).plot(ax=self.axs[0,1])
-            self.integrated_mdc=self.data_t.isel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1])
+            self.integrated_mdc=self.data_t.sel({self.data.dims[1]:slice(x_min, x_max)}, method='nearest').sum(dim=self.data.dims[1])
             self.integrated_mdc.plot(ax=self.axs[0,1])
             self.fig.canvas.draw()
     
         def box(): # generate the intensity graph between the four cursors in the main graph
-            self.int = np.zeros_like(self.axis[2])
             self.axs[1, 1].clear()
-            x0, y0 = map(int, self.square_coords[0])
-            x1, y1 = map(int, self.square_coords[1])
+            
+            x0,y0=self.dot1.center
+            x1,y1=self.dot2.center
     
             # Ensure (x0, y0) is the top-left corner and (x1, y1) is the bottom-right
             x0, x1 = sorted([x0, x1])
             y0, y1 = sorted([y0, y1])
-    
-            self.int = self.data.isel({self.data.dims[0]: slice(y0, y1), self.data.dims[1]: slice(x0, x1)}).sum(dim=(self.data.dims[0], self.data.dims[1]))
             
+            print (x0,x1,y0,y1)
+    
+            self.int = self.data.loc[{self.data.dims[0]: slice(y0, y1), self.data.dims[1]: slice(x0, x1)}].sum(dim=(self.data.dims[0], self.data.dims[1]))
+            print (self.int)
             if x0 != x1 and y0 != y1:
                 
                 self.int.plot(ax=self.axs[1,1])
@@ -299,26 +301,29 @@ class Gui_3d(QMainWindow):
         def update_show(t, dt): # update the main graph as well as the relevant EDC and MDC cuts. Also the box intensity
             self.axs[0, 1].clear()
             self.axs[1, 0].clear()
+            #update the main graph/ spectra
             self.data_t=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
             im.set_array(self.data_t)
+            # show the cuts for the EDC and MDC
             if self.checkbox_e.isChecked() and self.checkbox_k.isChecked():
                 integrate_E()
                 integrate_k()
             elif self.checkbox_e.isChecked():
                 integrate_E()
-                self.data_t.isel({self.data.dims[1]: int(self.square_coords[0][0])}).plot(ax=self.axs[0, 1], color='orange')
-                self.data_t.isel({self.data.dims[1]:int(self.square_coords[1][0])}).plot(ax=self.axs[0, 1], color='green')
+                self.data_t.sel({self.data.dims[1]:self.dot1.center[0]}, method='nearest').plot(ax=self.axs[0, 1], color='orange')
+                self.data_t.sel({self.data.dims[1]:self.dot2.center[0]}, method='nearest').plot(ax=self.axs[0, 1], color='green')
                 
             elif self.checkbox_k.isChecked():
                 integrate_k()
-                self.data_t.isel({self.data.dims[0]:self.square_coords[0][1]}).plot(ax=self.axs[1, 0], color='orange')
-                self.data_t.isel({self.data.dims[0]:self.square_coords[1][1]}).plot(ax=self.axs[1, 0], color='green')
+                self.data_t.sel({self.data.dims[0]:self.dot1.center[1]}, method='nearest').plot(ax=self.axs[1, 0], color='orange')
+                self.data_t.sel({self.data.dims[0]:self.dot2.center[1]}, method='nearest').plot(ax=self.axs[1, 0], color='green')
                 
-            else:
-                self.data_t.isel({self.data.dims[0]:self.square_coords[0][1]}).plot(ax=self.axs[1,0],color='orange')
-                self.data_t.isel({self.data.dims[0]:self.square_coords[1][1]}).plot(ax=self.axs[1,0],color='green')
-                self.data_t.isel({self.data.dims[1]:int(self.square_coords[0][0])}).plot(ax=self.axs[0,1],color='orange')
-                self.data_t.isel({self.data.dims[1]:int(self.square_coords[1][0])}).plot(ax=self.axs[0,1],color='green')
+            else: 
+                self.data_t.sel({self.data.dims[0]:self.dot1.center[1]}, method='nearest').plot(ax=self.axs[1,0],color='orange')
+                self.data_t.sel({self.data.dims[0]:self.dot2.center[1]}, method='nearest').plot(ax=self.axs[1,0],color='green')
+                self.data_t.sel({self.data.dims[1]:self.dot1.center[0]}, method='nearest').plot(ax=self.axs[0,1],color='orange')
+                self.data_t.sel({self.data.dims[1]:self.dot2.center[0]}, method='nearest').plot(ax=self.axs[0,1],color='green')
+
             
             box() # update the intensity box graph
             time1 = self.axis[2][t]
@@ -326,8 +331,6 @@ class Gui_3d(QMainWindow):
             self.axs[0, 0].set_title(f't: {time1:.2f}, t+dt: {timedt1:.2f}')
             self.fig.canvas.draw()
             plt.draw()
-   
-        # im6 = self.axs[0, 0].imshow(self.data_t.data, extent=[self.axis[1][0], self.axis[1][-1], self.axis[0][0], self.axis[0][-1]], origin='lower',cmap='terrain', aspect='auto')
         
         # plot the main graph
         im = self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2]).plot(ax=self.axs[0, 0], cmap='terrain', add_colorbar=False)
@@ -371,14 +374,14 @@ class Gui_3d(QMainWindow):
         ax.add_line(self.cursor_horiz2)
         ax.add_patch(self.dot2)
     
-        self.change_pixel_to_arrayslot()
+        # self.change_pixel_to_arrayslot()
         
         # define the integrated EDC and MDC 
-        x_min = int(min(self.square_coords[1][1], self.square_coords[0][1]))
-        x_max = int(max(self.square_coords[1][1], self.square_coords[0][1])) + 1
+        x_min = int(min(self.dot2.center[1], self.dot1.center[1]))
+        x_max = int(max(self.dot2.center[1], self.dot1.center[1])) + 1
         self.integrated_edc=self.data_t.isel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0])
-        x_min = int(min(self.square_coords[0][0], self.square_coords[1][0]))
-        x_max = int(max(self.square_coords[0][0], self.square_coords[1][0])) + 1
+        x_min = int(min(self.dot1.center[0], self.dot2.center[0]))
+        x_max = int(max(self.dot1.center[0], self.dot2.center[0])) + 1
         self.integrated_mdc=self.data_t.isel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1])
 
         plt.draw()
@@ -444,7 +447,7 @@ class Gui_3d(QMainWindow):
                 self.fig.canvas.draw()
                 plt.draw()
                 
-                self.change_pixel_to_arrayslot()
+                # self.change_pixel_to_arrayslot()
                 update_show(self.slider1.value(),self.slider2.value()) 
                
             
