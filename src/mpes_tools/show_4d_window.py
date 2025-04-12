@@ -229,11 +229,11 @@ class show_4d_window(QMainWindow):
         ax.set_title(f'energy: {E1:.2f}, E+dE: {E2:.2f} , t: {te1:.2f}, t+dt: {te2:.2f}')
         
         self.ev = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
-        self.eh = ax.axhline(y=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
+        self.eh = ax.axhline(y=self.data_array.coords[self.axes[1]][self.slider1[1].value()].item(), color='r', linestyle='--')
         self.pxv = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
         self.pyh = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
         self.graphs[0].tight_layout()
-        self.graphs[0].canvas.draw()
+        self.graphs[0].canvas.draw_idle()
         
     def update_ky(self,ypos,dy,ty,dty):
         
@@ -249,7 +249,7 @@ class show_4d_window(QMainWindow):
         self.yh = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
 
         self.graphs[1].tight_layout()
-        self.graphs[1].canvas.draw()
+        self.graphs[1].canvas.draw_idle()
         
         
     def update_kx(self,xpos,dx,tx,dtx):
@@ -265,7 +265,7 @@ class show_4d_window(QMainWindow):
         self.xh = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
         
         self.graphs[2].tight_layout()
-        self.graphs[2].canvas.draw()
+        self.graphs[2].canvas.draw_idle()
     
     
     def update_dt(self,yt,xt,dyt,dxt):
@@ -280,7 +280,7 @@ class show_4d_window(QMainWindow):
         ax.set_title(f'ky: {yt1:.2f}, ky+dky: {yt2:.2f} , kx: {xt1:.2f}, kx+dkx: {xt2:.2f}')
         self.ph = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
         self.graphs[3].tight_layout()
-        self.graphs[3].canvas.draw()
+        self.graphs[3].canvas.draw_idle()
         
 
     def slider_changed(self, value):
@@ -303,9 +303,9 @@ class show_4d_window(QMainWindow):
             self.yh = self.graphs[1].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
             self.ph = self.graphs[3].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
             # self.graphs[2].tight_layout()
-            self.graphs[2].canvas.draw()
-            self.graphs[1].canvas.draw()
-            self.graphs[3].canvas.draw()
+            self.graphs[2].canvas.draw_idle()
+            self.graphs[1].canvas.draw_idle()
+            self.graphs[3].canvas.draw_idle()
             self.update_energy(self.slider1[0].value(),self.slider2[0].value(),self.slider3[0].value(), self.slider4[0].value())
             
         elif index in range(4,8):
@@ -313,14 +313,14 @@ class show_4d_window(QMainWindow):
                 self.eh.remove()
            
             self.eh = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider1[1].value()].item(), color='r', linestyle='--')
-            self.graphs[0].canvas.draw()
+            self.graphs[0].canvas.draw_idle()
             self.update_ky(self.slider1[1].value(), self.slider2[1].value(),self.slider3[1].value(), self.slider4[1].value())
         elif index in range (8,12):
             ax = self.graphs[0].gca()
             if self.ev in ax.lines:
                 self.ev.remove()
             self.ev = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
-            self.graphs[0].canvas.draw()
+            self.graphs[0].canvas.draw_idle()
             self.update_kx(self.slider1[2].value(), self.slider2[2].value(),self.slider3[2].value(), self.slider4[2].value())
         elif index in range (12,16):
             if self.pxv in self.graphs[0].gca().lines:
@@ -331,7 +331,7 @@ class show_4d_window(QMainWindow):
             # self.pyh = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
             self.pyh = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
             self.pxv = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
-            self.graphs[0].canvas.draw()
+            self.graphs[0].canvas.draw_idle()
             self.update_dt(self.slider1[3].value(), self.slider3[3].value(), self.slider2[3].value(), self.slider4[3].value())
 
         

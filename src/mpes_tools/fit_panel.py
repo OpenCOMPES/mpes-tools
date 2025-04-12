@@ -239,16 +239,16 @@ class fit_panel(QMainWindow):
         self.t0_state = False
         self.offset_state = False
         self.data=data
-        x_min = int(min(c1, c2))
-        x_max = int(max(c1, c2)) + 1
+        x_min = min(c1, c2)
+        x_max = max(c1, c2)
         # print('xmin=',x_min,'xmax=',x_max)
         if panel =='box':
             self.y=data
         elif panel == data.dims[1]:
-            self.data_t=data.isel({data.dims[0]:slice(x_min, x_max)}).sum(dim=data.dims[0])
+            self.data_t=data.sel({data.dims[0]:slice(x_min, x_max)}).sum(dim=data.dims[0])
             self.dim=data.dims[1]
         elif panel ==data.dims[0]:
-            self.data_t=data.isel({data.dims[1]:slice(x_min, x_max)}).sum(dim=data.dims[1])
+            self.data_t=data.sel({data.dims[1]:slice(x_min, x_max)}).sum(dim=data.dims[1])
             self.dim=data.dims[0]
         self.panel=panel
         self.t=t

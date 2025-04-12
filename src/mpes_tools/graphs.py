@@ -83,8 +83,6 @@ class showgraphs(QMainWindow):
         plt.show()  # Show the figure in a new window
     def update_parameter(self, value):
         base = self.slider_label.text().split(':')[0]
-        print("self.x:", self.x)
-        print("Slider value:", value)
         self.slider_label.setText(f"{base}: {self.x[value]:.2f}")
         self.axis.clear()
         
