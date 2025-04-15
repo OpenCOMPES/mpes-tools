@@ -8,7 +8,8 @@ import h5py
 from mpes_tools.Gui_3d import Gui_3d
 import xarray as xr
 from mpes_tools.hdf5 import load_h5
-
+from IPython.core.getipython import get_ipython
+from mpes_tools.double_click_handler import SubplotClickHandler
 
 class show_4d_window(QMainWindow):
     def __init__(self,data_array: xr.DataArray):
@@ -20,11 +21,10 @@ class show_4d_window(QMainWindow):
         # Create a central widget for the graph and slider
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-
+        
         # Create a layout for the central widget
         layout = QGridLayout()
         central_widget.setLayout(layout)
-
         # Create four graphs and sliders
         self.graphs = []
         self.slider1 = []
@@ -33,9 +33,10 @@ class show_4d_window(QMainWindow):
         self.slider4 = []
         self.sliders = []
         self.slider_labels = []
-
+        self.canvases = []
+        self.click_handlers=[]
+        self.axis_list=[]
         plt.ioff()
-
         for i in range(2):
             for j in range(2):
                 graph_window = QWidget()
@@ -43,10 +44,17 @@ class show_4d_window(QMainWindow):
                 graph_window.setLayout(graph_layout)
 
                 # Create a figure and canvas for the graph
-                figure, axis = plt.subplots(figsize=(20, 20))
+                figure, axis = plt.subplots(figsize=(10, 10))
+                plt.close(figure)
                 canvas = FigureCanvas(figure)
+                handler = SubplotClickHandler(axis, self.external_callback)
+                canvas.mpl_connect("button_press_event", handler.handle_double_click)
+                self.click_handlers.append(handler)
                 graph_layout.addWidget(canvas)
-
+                self.axis_list.append(axis)
+                self.canvases.append(canvas)
+                
+                
                 slider_layout= QHBoxLayout()
                 slider_layout_2= QHBoxLayout()
                 # Create a slider widget
@@ -102,6 +110,7 @@ class show_4d_window(QMainWindow):
                 self.slider4.append(slider4)
                 self.sliders.extend([slider1, slider2,slider3, slider4])
                 self.slider_labels.extend([slider1_label, slider2_label,slider3_label, slider4_label])
+
         for slider in self.slider1:   
             slider.valueChanged.connect(self.slider_changed)
         for slider in self.slider2:   
@@ -142,6 +151,97 @@ class show_4d_window(QMainWindow):
 
         self.show()
         self.load_data(data_array)
+
+    def closeEvent(self, event):
+        # Remove references to graphs and canvases to prevent lingering objects
+        self.graphs = []
+        self.canvases = []
+        self.axis_list = []
+        
+        # Update window state
+        self.window_open = False
+        event.accept()
+
+    def external_callback(self, ax):
+        # print(f"External callback: clicked subplot ({i},{j})")
+        if ax==self.graphs[0].gca():
+            content= f"""
+data='your data_array'
+#the energy plot
+data.loc[
+    {{
+        '{self.axes[2]}': slice(
+            {self.data_array[self.axes[2]][self.slider1[0].value()].item()},
+            {self.data_array[self.axes[2]][self.slider1[0].value() + self.slider2[0].value()].item()}
+        ),
+        '{self.axes[3]}': slice(
+            {self.data_array[self.axes[3]][self.slider3[0].value()].item()},
+            {self.data_array[self.axes[3]][self.slider3[0].value() + self.slider4[0].value()].item()}
+        )
+    }}
+].mean(dim=('{self.axes[2]}', '{self.axes[3]}')).T
+
+            """
+        elif ax==self.graphs[1].gca():
+            content= f"""
+data='your data_array'
+#the ky plot
+data.loc[
+    {{
+        '{self.axes[1]}': slice(
+            {self.data_array[self.axes[1]][self.slider1[1].value()].item()},
+            {self.data_array[self.axes[1]][self.slider1[1].value() + self.slider2[1].value()].item()}
+        ),
+        '{self.axes[3]}': slice(
+            {self.data_array[self.axes[3]][self.slider3[1].value()].item()},
+            {self.data_array[self.axes[3]][self.slider3[1].value() + self.slider4[1].value()].item()}
+        )
+    }}
+].mean(dim=('{self.axes[1]}', '{self.axes[3]}')).T
+            """
+        elif ax==self.axis_list[2]:
+            content= f"""
+data='your data_array'
+#the kx plot
+data.loc[
+    {{
+        '{self.axes[0]}': slice(
+            {self.data_array[self.axes[0]][self.slider1[2].value()].item()},
+            {self.data_array[self.axes[0]][self.slider1[2].value() + self.slider2[2].value()].item()}
+        ),
+        '{self.axes[3]}': slice(
+            {self.data_array[self.axes[3]][self.slider3[2].value()].item()},
+            {self.data_array[self.axes[3]][self.slider3[2].value() + self.slider4[2].value()].item()}
+        )
+    }}
+].mean(dim=('{self.axes[0]}', '{self.axes[3]}')).T
+            """
+        elif ax==self.axis_list[3]:
+            content= f"""
+data='your data_array'
+#the kx,ky plot
+data.loc[
+    {{
+        '{self.axes[1]}': slice(
+            {self.data_array[self.axes[1]][self.slider1[3].value()].item()},
+            {self.data_array[self.axes[1]][self.slider1[3].value() + self.slider2[3].value()].item()}
+        ),
+        '{self.axes[0]}': slice(
+            {self.data_array[self.axes[0]][self.slider3[3].value()].item()},
+            {self.data_array[self.axes[0]][self.slider3[3].value()+ self.slider4[3].value()].item()}
+        )
+    }}
+].mean(dim=('{self.axes[1]}', '{self.axes[0]}'))
+            """
+        shell = get_ipython()
+        payload = dict(
+            source='set_next_input',
+            text=content,
+            replace=False,
+        )
+        shell.payload_manager.write_payload(payload, single=False)
+        shell.run_cell('pass')
+        print('results extracted!')
 
     def open_graph_kxkydt(self):
         E1=self.data_array[self.axes[2]][self.slider1[0].value()].item()
@@ -206,13 +306,14 @@ class show_4d_window(QMainWindow):
         self.slider_labels[15].setText("Δ"+self.axes[0])
         
         
-        self.update_energy(self.slider1[0].value(),self.slider2[0].value() , self.slider1[1].value(), self.slider2[1].value())
+        self.update_energy(self.slider1[0].value(),self.slider2[0].value(),self.slider3[0].value(), self.slider4[0].value())
 
-        self.update_ky(self.slider1[2].value(), self.slider2[2].value(), self.slider3[0].value(), self.slider4[0].value())
+        self.update_ky(self.slider1[1].value(), self.slider2[1].value(),self.slider3[1].value(), self.slider4[1].value())
     
-        self.update_kx(self.slider3[1].value(), self.slider4[1].value(), self.slider3[2].value(), self.slider4[2].value())
+        self.update_kx(self.slider1[2].value(), self.slider2[2].value(),self.slider3[2].value(), self.slider4[2].value())
         
-        self.update_dt(self.slider1[3].value(), self.slider3[3].value(), self.slider2[3].value(), self.slider4[3].value())
+        self.update_dt(self.slider1[3].value(), self.slider2[3].value(), self.slider3[3].value(), self.slider4[3].value())
+    
     
     def update_energy(self,Energy,dE,te,dte):
         self.ce_state=True
@@ -221,11 +322,10 @@ class show_4d_window(QMainWindow):
         te1=self.data_array[self.axes[3]][te].item()
         te2=self.data_array[self.axes[3]][te+dte].item()
 
-        self.graphs[0].clear()
         ax=self.graphs[0].gca()
-
+        ax.cla() 
         data_avg=self.data_array.loc[{self.axes[2]:slice(E1,E2), self.axes[3]:slice(te1,te2)}].mean(dim=(self.axes[2], self.axes[3]))
-        self.im=data_avg.T.plot(ax=ax,cmap='terrain')
+        self.im=data_avg.T.plot(ax=ax,cmap='terrain', add_colorbar=False)
         ax.set_title(f'energy: {E1:.2f}, E+dE: {E2:.2f} , t: {te1:.2f}, t+dt: {te2:.2f}')
         
         self.ev = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
@@ -242,9 +342,9 @@ class show_4d_window(QMainWindow):
         ty1=self.data_array[self.axes[3]][ty].item()
         ty2=self.data_array[self.axes[3]][ty+dty].item()
         
-        self.graphs[1].clear()
         ax=self.graphs[1].gca()
-        self.data_array.loc[{self.axes[1]:slice(y1,y2), self.axes[3]:slice(ty1,ty2)}].mean(dim=(self.axes[1], self.axes[3])).T.plot(ax=ax,cmap='terrain')
+        ax.cla() 
+        self.data_array.loc[{self.axes[1]:slice(y1,y2), self.axes[3]:slice(ty1,ty2)}].mean(dim=(self.axes[1], self.axes[3])).T.plot(ax=ax,cmap='terrain', add_colorbar=False)
         ax.set_title(f'ky: {y1:.2f}, ky+dky: {y2:.2f} , t: {ty1:.2f}, t+dt: {ty2:.2f}')
         self.yh = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
 
@@ -258,9 +358,9 @@ class show_4d_window(QMainWindow):
         tx1=self.data_array[self.axes[3]][tx].item()
         tx2=self.data_array[self.axes[3]][tx+dtx].item()
         
-        self.graphs[2].clear()
         ax=self.graphs[2].gca()
-        self.data_array.loc[{self.axes[0]:slice(x1,x2), self.axes[3]:slice(tx1,tx2)}].mean(dim=(self.axes[0], self.axes[3])).T.plot(ax=ax,cmap='terrain')
+        ax.cla() 
+        self.data_array.loc[{self.axes[0]:slice(x1,x2), self.axes[3]:slice(tx1,tx2)}].mean(dim=(self.axes[0], self.axes[3])).T.plot(ax=ax,cmap='terrain', add_colorbar=False)
         ax.set_title(f'kx: {x1:.2f}, kx+dkx: {x2:.2f} , t: {tx1:.2f}, t+dt: {tx2:.2f}')
         self.xh = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
         
@@ -268,15 +368,15 @@ class show_4d_window(QMainWindow):
         self.graphs[2].canvas.draw_idle()
     
     
-    def update_dt(self,yt,xt,dyt,dxt):
+    def update_dt(self,yt,dyt,xt,dxt):
         yt1=self.data_array[self.axes[1]][yt].item()
         yt2=self.data_array[self.axes[1]][yt+dyt].item()
         xt1=self.data_array[self.axes[0]][xt].item()
         xt2=self.data_array[self.axes[0]][xt+dxt].item()
         
-        self.graphs[3].clear()
         ax=self.graphs[3].gca()
-        self.data_array.loc[{self.axes[1]:slice(yt1,yt2), self.axes[0]:slice(xt1,xt2)}].mean(dim=(self.axes[1], self.axes[0])).plot(ax=ax,cmap='terrain')
+        ax.cla() 
+        self.data_array.loc[{self.axes[1]:slice(yt1,yt2), self.axes[0]:slice(xt1,xt2)}].mean(dim=(self.axes[1], self.axes[0])).plot(ax=ax,cmap='terrain', add_colorbar=False)
         ax.set_title(f'ky: {yt1:.2f}, ky+dky: {yt2:.2f} , kx: {xt1:.2f}, kx+dkx: {xt2:.2f}')
         self.ph = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
         self.graphs[3].tight_layout()
@@ -327,12 +427,10 @@ class show_4d_window(QMainWindow):
                 self.pxv.remove()
             if self.pyh in self.graphs[0].gca().lines:
                 self.pyh.remove()
-            # self.pxv = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
-            # self.pyh = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
             self.pyh = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
             self.pxv = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
             self.graphs[0].canvas.draw_idle()
-            self.update_dt(self.slider1[3].value(), self.slider3[3].value(), self.slider2[3].value(), self.slider4[3].value())
+            self.update_dt(self.slider1[3].value(), self.slider2[3].value(), self.slider3[3].value(), self.slider4[3].value())
 
         
 if __name__ == "__main__":
