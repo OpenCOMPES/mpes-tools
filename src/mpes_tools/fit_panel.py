@@ -32,9 +32,9 @@ class fit_panel(QMainWindow):
         view_menu = menu_bar.addMenu("View")
 
         # Create actions for showing and hiding the graph window
-        show_graph_action = QAction("Show Graph", self)
-        show_graph_action.triggered.connect(self.show_graph_window)
-        view_menu.addAction(show_graph_action)
+        clear_graph_action = QAction("Show Graph", self)
+        clear_graph_action.triggered.connect(self.clear_graph_window)
+        view_menu.addAction(clear_graph_action)
 
         # Store references to graph windows to prevent garbage collection
         self.graph_windows = []
@@ -65,6 +65,7 @@ class fit_panel(QMainWindow):
         splitter.addWidget(right_panel)
         
         self.figure, self.axis = plt.subplots()
+        plt.close(self.figure)
         self.canvas = FigureCanvas(self.figure)
         # Create two checkboxes
         self.checkbox0 = QCheckBox("Cursors")
@@ -129,7 +130,7 @@ class fit_panel(QMainWindow):
         
 
         self.graph_button = QPushButton("clear graph")
-        self.graph_button.clicked.connect(self.show_graph_window)
+        self.graph_button.clicked.connect(self.clear_graph_window)
         
         self.fit_button = QPushButton("Fit")
         self.fit_button.clicked.connect(self.fit)
@@ -269,6 +270,11 @@ class fit_panel(QMainWindow):
         if self.panel != 'box':
             self.y=self.data_t.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
         self.y.plot(ax=self.axis)
+        if self.checkbox0.isChecked():
+            if self.cursor_handler is None:
+                self.cursor_handler = MovableCursors(self.axis)
+            else:
+                self.cursor_handler.redraw()
         self.figure.tight_layout()
         self.canvas.draw()
     def update_text_edit_boxes(self):
@@ -340,7 +346,7 @@ class fit_panel(QMainWindow):
             return convolution_result[N-1:-1]
     
 
-    def show_graph_window(self):
+    def clear_graph_window(self):
         self.axis.clear()
         self.plot_graph(self.t,self.dt)
         
