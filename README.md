@@ -19,4 +19,5 @@ https://fhi-cloud.gnz.mpg.de/index.php/s/2k92qCy7sGJb8Fg
 https://fhi-cloud.gnz.mpg.de/index.php/s/HLNM48tNGxjiXsR
 
 npz file
-https://fhi-cloud.gnz.mpg.de/index.php/f/33900550
+
+https://fhi-cloud.gnz.mpg.de/index.php/s/QiqrixzArtx3Fc3
