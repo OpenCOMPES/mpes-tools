@@ -17,6 +17,7 @@ from mpes_tools.graphs import showgraphs
 
 
 
+
 class fit_panel(QMainWindow):
     def __init__(self,data,c1,c2,t,dt,panel):
         super().__init__()
