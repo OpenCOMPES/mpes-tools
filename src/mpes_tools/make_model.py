@@ -1,28 +1,18 @@
-import sys
-from PyQt5.QtGui import QBrush, QColor
-from PyQt5.QtWidgets import QTextEdit, QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QAction, QCheckBox, QPushButton, QListWidget, QTableWidget, QTableWidgetItem, QTableWidget, QCheckBox, QSplitter
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QTableWidgetItem, QHBoxLayout, QCheckBox, QWidget
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import matplotlib.pyplot as plt
 
-
+from PyQt5.QtWidgets import  QCheckBox
 
 class make_model:
-    # from matplotlib.widgets import CheckButtons, Button
-    # %matplotlib qt
-    
     def __init__(self,mod,table_widget):
         
         self.mod=mod
         self.params=mod.make_params()
-        print('otherpalce',self.params)
-        print('thefuuuuTable',table_widget)
-        print('count',table_widget.rowCount())
+        # print('otherpalce',self.params)
+        # print('thefuuuuTable',table_widget)
+        # print('count',table_widget.rowCount())
         for row in range(table_widget.rowCount()):
             item = table_widget.item(row, 1)
             checkbox_widget = table_widget.cellWidget(row, 3)
-            print('tableitenm=',item)
+            # print('tableitenm=',item)
             if item is not None and item.text().strip():
                 header_item = table_widget.verticalHeaderItem(item.row())
                 checkbox=checkbox_widget.findChild(QCheckBox)
