@@ -235,6 +235,8 @@ class fit_panel_single(QMainWindow):
         imid = max(np.where(x <= mid)[0])
         o[:imid] = Amp
         return o
+    def sinusoid(self,x,A,omega,phi):
+        return  A* np.sin(omega*x+phi)
 
     def centered_kernel(self,x, sigma):
         mean = x.mean()
@@ -390,6 +392,8 @@ class fit_panel_single(QMainWindow):
             self.function_selected =self.constant
         elif item.text()=='jump':
             self.function_selected =self.jump2
+        elif item.text()=='sinusoid':
+            self.function_selected =self.sinusoid
         
     def button_guess_clicked(self):
         cursors= self.cursor_handler.cursors()
