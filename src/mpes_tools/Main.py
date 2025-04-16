@@ -69,18 +69,38 @@ class ARPES_Analyser(QMainWindow):
         self.show()
 
 
-    def open_file_phoibos(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open Text File", "", "Text Files (*.npz)")
-        if file_path: 
-            loaded_data = np.load(file_path)  
-        V1 = xr.DataArray(loaded_data['data_array'], dims=['Angle', 'Ekin','delay'], coords={'Angle': loaded_data['Angle'], 'Ekin': loaded_data['Ekin'],'delay': loaded_data['delay']})    
-        axis=[V1['Angle'],V1['Ekin']-21.7,V1['delay']]
-        # print(data.dims)
-        graph_window= Gui_3d(V1,0,0,'Phoibos')
         
+    def open_file_phoibos(self):
+        # ... existing code ...
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open File", "", "Data Files (*.npz *.nxs)")
+        if file_path:
+            if file_path.endswith('.npz'):
+                loaded_data = np.load(file_path)
+                V1 = xr.DataArray(loaded_data['data_array'], 
+                                dims=['Angle', 'Ekin','delay'], 
+                                coords={'Angle': loaded_data['Angle'], 
+                                       'Ekin': loaded_data['Ekin'],
+                                       'delay': loaded_data['delay']})
+            elif file_path.endswith('.nxs'):
+                with h5py.File(file_path, 'r') as f:
+                    # Ajuste os caminhos dos dados de acordo com a estrutura do seu arquivo NeXus
+                    # Isso é um exemplo - você precisa adaptar para a estrutura específica do seu arquivo
+                    data_array = f['/entry/data/data'][:]  # Ajuste o caminho conforme necessário
+                    angle = f['/entry/data/angular0'][:]      # Ajuste o caminho conforme necessário
+                    energy = f['/entry/data/energy'][:]    # Ajuste o caminho conforme necessário
+                    delay = f['/entry/data/delay'][:]      # Ajuste o caminho conforme necessário
+                    
+                    V1 = xr.DataArray(data_array,
+                                    dims=['Angle', 'Ekin', 'delay'],
+                                    coords={'Angle': angle,
+                                           'Ekin': energy,
+                                           'delay': delay})
+
+        axis=[V1['Angle'],V1['Ekin']-21.7,V1['delay']]
+        graph_window= Gui_3d(V1,0,0,'Phoibos')
         graph_window.show()
         self.graph_windows.append(graph_window)
-        
+
     def open_file_dialoge(self):
         # Open file dialog to select a .h5 file
         file_path, _ = QFileDialog.getOpenFileName(self, "Open hdf5", "", "h5 Files (*.h5)")
