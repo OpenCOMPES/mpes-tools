@@ -8,13 +8,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from lmfit import CompositeModel, Model
 import inspect
-from .movable_vertical_cursors_graph import MovableCursors
-from .make_model import make_model
-from .graphs2 import showgraphs
+from mpes_tools.tools.movable_vertical_cursors_graph import MovableCursors
+from mpes_tools.tools.make_model import make_model
+from mpes_tools.guis.graphs2 import showgraphs
+
+import matplotlib
+matplotlib.use('qtagg')
 
 
-
-class MainWindow(QMainWindow):
+class MpesToolFitting(QMainWindow):
     def __init__(self,data,axis,c1,c2,t,dt):
         super().__init__()
 
@@ -692,6 +694,6 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = MpesToolFitting()
     window.show()
     sys.exit(app.exec_())

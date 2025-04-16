@@ -6,13 +6,14 @@ import numpy as np
 from matplotlib.patches import Circle
 from matplotlib.lines import Line2D
 
-from mpes_tools.fi_panel6 import MainWindow
+from mpes_tools.guis.gui_fitting import MpesToolFitting
 
 import xarray as xr
 
-# %matplotlib qt
+import matplotlib
+matplotlib.use('qtagg')
 
-class GraphWindow(QMainWindow):
+class MpesTool3D(QMainWindow):
     def __init__(self,data_array: xr.DataArray,t,dt):
         global t_final
         super().__init__()
@@ -172,7 +173,7 @@ class GraphWindow(QMainWindow):
     
     def fit_panel(self,event):
         print('forfit',len(self.plot),'axis',len(self.axis))
-        graph_window=   MainWindow( self.data_o, self.axis,self.square_coords[0][1], self.square_coords[1][1],self.t,self.dt)
+        graph_window=   MpesToolFitting( self.data_o, self.axis,self.square_coords[0][1], self.square_coords[1][1],self.t,self.dt)
         graph_window.show()
         self.graph_windows.append(graph_window)
         
