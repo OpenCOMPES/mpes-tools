@@ -24,7 +24,6 @@ class showgraphs(QMainWindow):
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
         layout = QGridLayout(central_widget)
-        print('boo')
         
         # print(len(x),len(list_plot_fits))
         # print(list_plot_fits[0])
@@ -76,7 +75,6 @@ class showgraphs(QMainWindow):
             canvas.mpl_connect("button_press_event", handler.handle_double_click)
             self.click_handlers.append(handler)
             self.ax_list.append(ax)
-            print('in the main code'+f"self.ax id: {id(ax)}")
     def external_callback(self,ax):
         # print(f"External callback: clicked subplot ({i},{j})")
         for i, ax_item in enumerate(self.ax_list):
@@ -115,10 +113,7 @@ data_array = xr.DataArray(
         plt.close(figure)
         data_array.plot(ax=ax)
         ax.set_title(title)
-        # ax.grid(True)
-        # ax.set_xlabel(self.dim)
-        # ax.set_ylabel('y')
-        print('create_plot'+f"self.ax id: {id(ax)}")
+        # print('create_plot'+f"self.ax id: {id(ax)}")
         # Create a FigureCanvas to embed in the Qt layout
         canvas = FigureCanvas(figure)
         toolbar = NavigationToolbar(canvas, self)

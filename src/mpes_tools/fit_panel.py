@@ -808,16 +808,12 @@ class fit_panel(QMainWindow):
             for pname, par in self.params.items():
                 self.fit_results.append(getattr(self, pname)[:-self.dt])
                 names.append(pname)
-                print('dt>0')  
-                print(len(getattr(self, pname)))
         else:
             for pname, par in self.params.items():
                 self.fit_results.append(getattr(self, pname))
                 names.append(pname)
-                print('dt=0')  
-                print(len(getattr(self, pname)))
         # print('th dt',self.dt)    
-        print('the xaxis',len(self.data[self.data.dims[2]][:len(self.data[self.data.dims[2]])-self.dt]))
+        # print('the xaxis',len(self.data[self.data.dims[2]][:len(self.data[self.data.dims[2]])-self.dt]))
         sg=showgraphs(self.data[self.data.dims[2]][:len(self.data[self.data.dims[2]])-self.dt], self.fit_results,names,list_axis,list_plot_fits)
         sg.show()
         self.graph_windows.append(sg)

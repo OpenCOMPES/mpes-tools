@@ -189,16 +189,17 @@ class fit_panel_single(QMainWindow):
         self.CV_state = False
         self.t0_state = False
         self.offset_state = False
-        self.dim='delay'
         # self.data=data
         # self.y=data
         # self.dim=self.data.dims[0]
+        self.dim='delay'
         self.plot_graph()
-
+        
+        
     def plot_graph(self):
         self.axis.clear()
         data= loadtxt('//nap33/wahada/data_CVS_new/11626/vhs3/position2025-03-13_173331.txt')
-        dim='delay'
+        dim= self.dim
         title='peak'
         self.y = xr.DataArray(
             data=data[:,1],
