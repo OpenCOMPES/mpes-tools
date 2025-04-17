@@ -11,6 +11,7 @@ from mpes_tools.hdf5 import load_h5
 from mpes_tools.show_4d_window import show_4d_window
 import os
 from PyQt5.QtGui import QPixmap
+import nxarray
 
 class ARPES_Analyser(QMainWindow):
     def __init__(self):
@@ -82,19 +83,9 @@ class ARPES_Analyser(QMainWindow):
                                        'Ekin': loaded_data['Ekin'],
                                        'delay': loaded_data['delay']})
             elif file_path.endswith('.nxs'):
-                with h5py.File(file_path, 'r') as f:
-                    # Ajuste os caminhos dos dados de acordo com a estrutura do seu arquivo NeXus
-                    # Isso é um exemplo - você precisa adaptar para a estrutura específica do seu arquivo
-                    data_array = f['/entry/data/data'][:]  # Ajuste o caminho conforme necessário
-                    angle = f['/entry/data/angular0'][:]      # Ajuste o caminho conforme necessário
-                    energy = f['/entry/data/energy'][:]    # Ajuste o caminho conforme necessário
-                    delay = f['/entry/data/delay'][:]      # Ajuste o caminho conforme necessário
-                    
-                    V1 = xr.DataArray(data_array,
-                                    dims=['Angle', 'Ekin', 'delay'],
-                                    coords={'Angle': angle,
-                                           'Ekin': energy,
-                                           'delay': delay})
+                V1=nxarray.load(file_path)
+                V1=V1.rename({'angular0':'Angle','energy':'Ekin','delay':'delay'})
+                V1=V1[list(V1.data_vars)[0]]
 
         axis=[V1['Angle'],V1['Ekin']-21.7,V1['delay']]
         graph_window= Gui_3d(V1,0,0,'Phoibos')
