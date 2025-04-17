@@ -10,6 +10,9 @@ import xarray as xr
 from mpes_tools.hdf5 import load_h5
 from IPython.core.getipython import get_ipython
 from mpes_tools.double_click_handler import SubplotClickHandler
+from mpes_tools.right_click_handler import RightClickHandler
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtGui import QCursor
 
 class show_4d_window(QMainWindow):
     def __init__(self,data_array: xr.DataArray):
@@ -35,6 +38,7 @@ class show_4d_window(QMainWindow):
         self.slider_labels = []
         self.canvases = []
         self.click_handlers=[]
+        self.handler_list=[]
         self.axis_list=[]
         plt.ioff()
         for i in range(2):
@@ -47,9 +51,13 @@ class show_4d_window(QMainWindow):
                 figure, axis = plt.subplots(figsize=(10, 10))
                 plt.close(figure)
                 canvas = FigureCanvas(figure)
-                handler = SubplotClickHandler(axis, self.external_callback)
-                canvas.mpl_connect("button_press_event", handler.handle_double_click)
-                self.click_handlers.append(handler)
+                # handler = SubplotClickHandler(axis, self.external_callback)
+                # canvas.mpl_connect("button_press_event", handler.handle_double_click)
+                # self.click_handlers.append(handler)
+                handler = RightClickHandler(canvas, axis,self.show_pupup_window)
+                canvas.mpl_connect("button_press_event", handler.on_right_click)
+                self.handler_list.append(handler)
+                
                 graph_layout.addWidget(canvas)
                 self.axis_list.append(axis)
                 self.canvases.append(canvas)
@@ -110,6 +118,14 @@ class show_4d_window(QMainWindow):
                 self.slider4.append(slider4)
                 self.sliders.extend([slider1, slider2,slider3, slider4])
                 self.slider_labels.extend([slider1_label, slider2_label,slider3_label, slider4_label])
+                
+        # self.xv = None
+        # self.yv = None
+        # self.energy_kx_cursor = None
+        # self.energy_ky_cursor = None
+        # self.kx_ky_energy_cursor= None
+        # self.energy_kxky_x=None
+        # self.energy_kxky_y=None
 
         for slider in self.slider1:   
             slider.valueChanged.connect(self.slider_changed)
@@ -119,15 +135,7 @@ class show_4d_window(QMainWindow):
             slider.valueChanged.connect(self.slider_changed)
         for slider in self.slider4:   
             slider.valueChanged.connect(self.slider_changed)
-            
-        self.xv = None
-        self.yv = None
-        self.ev = None
-        self.eh = None
-        self.ph= None
-        self.pxv=None
-        self.pyh=None
-        
+
         
         open_graphe_action = QAction("Energy", self)
         open_graphe_action.triggered.connect(self.open_graph_kxkydt)
@@ -161,7 +169,60 @@ class show_4d_window(QMainWindow):
         # Update window state
         self.window_open = False
         event.accept()
+    def show_pupup_window(self,canvas,ax):
+        if ax==self.axis_list[0]:
+            menu = QMenu(canvas)
+            action1 = menu.addAction("energy plot")
+            action = menu.exec_(QCursor.pos())
+    
+            if action == action1:
+                print(f"""# ENERGY plot
+data.loc[{{
+    '{self.axes[2]}': slice({self.data_array[self.axes[2]][self.slider1[0].value()].item()}, {self.data_array[self.axes[2]][self.slider1[0].value() + self.slider2[0].value()].item()}),
+    '{self.axes[3]}': slice({self.data_array[self.axes[3]][self.slider3[0].value()].item()}, {self.data_array[self.axes[3]][self.slider3[0].value() + self.slider4[0].value()].item()})
+}}].mean(dim=('{self.axes[2]}', '{self.axes[3]}')).T  
+""")
 
+        elif ax==self.axis_list[1]:
+            menu = QMenu(canvas)
+            action1 = menu.addAction("ky plot")
+            action = menu.exec_(QCursor.pos())
+    
+            if action == action1:
+                print(f"""# KY plot
+data.loc[{{
+    '{self.axes[1]}': slice({self.data_array[self.axes[1]][self.slider1[1].value()].item()}, {self.data_array[self.axes[1]][self.slider1[1].value() + self.slider2[1].value()].item()}),
+    '{self.axes[3]}': slice({self.data_array[self.axes[3]][self.slider3[1].value()].item()}, {self.data_array[self.axes[3]][self.slider3[1].value() + self.slider4[1].value()].item()})
+}}].mean(dim=('{self.axes[1]}', '{self.axes[3]}')).T 
+""")
+
+
+        elif ax==self.axis_list[2]:
+            menu = QMenu(canvas)
+            action1 = menu.addAction("kx plot")
+            action = menu.exec_(QCursor.pos())
+    
+            if action == action1:
+                print(f"""# KX plot
+data.loc[{{
+    '{self.axes[0]}': slice({self.data_array[self.axes[0]][self.slider1[2].value()].item()}, {self.data_array[self.axes[0]][self.slider1[2].value() + self.slider2[2].value()].item()}),
+    '{self.axes[3]}': slice({self.data_array[self.axes[3]][self.slider3[2].value()].item()}, {self.data_array[self.axes[3]][self.slider3[2].value() + self.slider4[2].value()].item()})
+}}].mean(dim=('{self.axes[0]}', '{self.axes[3]}')).T  
+""")
+
+            
+        elif ax==self.axis_list[3]:
+            menu = QMenu(canvas)
+            action1 = menu.addAction("kx ky plot")
+            action = menu.exec_(QCursor.pos())
+    
+            if action == action1:
+                print(f"""# KX-KY plot
+data.loc[{{
+    '{self.axes[1]}': slice({self.data_array[self.axes[1]][self.slider1[3].value()].item()}, {self.data_array[self.axes[1]][self.slider1[3].value() + self.slider2[3].value()].item()}),
+    '{self.axes[0]}': slice({self.data_array[self.axes[0]][self.slider3[3].value()].item()}, {self.data_array[self.axes[0]][self.slider3[3].value() + self.slider4[3].value()].item()})
+}}].mean(dim=('{self.axes[1]}', '{self.axes[0]}')) 
+""")
     def external_callback(self, ax):
         # print(f"External callback: clicked subplot ({i},{j})")
         if ax==self.graphs[0].gca():
@@ -328,10 +389,14 @@ data.loc[
         self.im=data_avg.T.plot(ax=ax,cmap='terrain', add_colorbar=False)
         ax.set_title(f'energy: {E1:.2f}, E+dE: {E2:.2f} , t: {te1:.2f}, t+dt: {te2:.2f}')
         
-        self.ev = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
-        self.eh = ax.axhline(y=self.data_array.coords[self.axes[1]][self.slider1[1].value()].item(), color='r', linestyle='--')
-        self.pxv = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
-        self.pyh = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
+        self.energy_kx_cursor = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
+        self.energy_ky_cursor = ax.axhline(y=self.data_array.coords[self.axes[1]][self.slider1[1].value()].item(), color='r', linestyle='--')
+        self.energy_kxky_x = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
+        self.energy_kxky_y = ax.axhline(y=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
+        self.energy_delta_kx_cursor = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()+self.slider2[2].value()].item(), color='r', linestyle='--')
+        self.energy_delta_ky_cursor = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider1[1].value()+self.slider2[1].value()].item(), color='r', linestyle='--')
+        self.energy_delta_kxky_y = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[1]][self.slider1[3].value()+self.slider2[3].value()].item(), color='b', linestyle='--')
+        self.energy_delta_kxky_x = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[0]][self.slider3[3].value()+self.slider4[3].value()].item(), color='b', linestyle='--')
         self.graphs[0].tight_layout()
         self.graphs[0].canvas.draw_idle()
         
@@ -346,8 +411,8 @@ data.loc[
         ax.cla() 
         self.data_array.loc[{self.axes[1]:slice(y1,y2), self.axes[3]:slice(ty1,ty2)}].mean(dim=(self.axes[1], self.axes[3])).T.plot(ax=ax,cmap='terrain', add_colorbar=False)
         ax.set_title(f'ky: {y1:.2f}, ky+dky: {y2:.2f} , t: {ty1:.2f}, t+dt: {ty2:.2f}')
-        self.yh = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
-
+        self.ky_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+        self.ky_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
         self.graphs[1].tight_layout()
         self.graphs[1].canvas.draw_idle()
         
@@ -362,8 +427,8 @@ data.loc[
         ax.cla() 
         self.data_array.loc[{self.axes[0]:slice(x1,x2), self.axes[3]:slice(tx1,tx2)}].mean(dim=(self.axes[0], self.axes[3])).T.plot(ax=ax,cmap='terrain', add_colorbar=False)
         ax.set_title(f'kx: {x1:.2f}, kx+dkx: {x2:.2f} , t: {tx1:.2f}, t+dt: {tx2:.2f}')
-        self.xh = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
-        
+        self.kx_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+        self.kx_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
         self.graphs[2].tight_layout()
         self.graphs[2].canvas.draw_idle()
     
@@ -378,7 +443,8 @@ data.loc[
         ax.cla() 
         self.data_array.loc[{self.axes[1]:slice(yt1,yt2), self.axes[0]:slice(xt1,xt2)}].mean(dim=(self.axes[1], self.axes[0])).plot(ax=ax,cmap='terrain', add_colorbar=False)
         ax.set_title(f'ky: {yt1:.2f}, ky+dky: {yt2:.2f} , kx: {xt1:.2f}, kx+dkx: {xt2:.2f}')
-        self.ph = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+        self.kx_ky_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+        self.kx_ky_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
         self.graphs[3].tight_layout()
         self.graphs[3].canvas.draw_idle()
         
@@ -393,15 +459,25 @@ data.loc[
 
         if index in range(0,4):
             # ax = self.graphs[2].gca()
-            if self.xh in self.graphs[2].gca().lines:
-                self.xh.remove()
-            if self.yh in self.graphs[1].gca().lines:
-                self.yh.remove()
-            if self.ph in self.graphs[3].gca().lines:
-                self.ph.remove()
-            self.xh = self.graphs[2].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
-            self.yh = self.graphs[1].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
-            self.ph = self.graphs[3].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+            if self.kx_energy_cursor in self.graphs[2].gca().lines:
+                self.kx_energy_cursor.remove()
+            if self.ky_energy_cursor in self.graphs[1].gca().lines:
+                self.ky_energy_cursor.remove()
+            if self.kx_ky_energy_cursor in self.graphs[3].gca().lines:
+                self.kx_ky_energy_cursor.remove()
+            if self.kx_delta_energy_cursor in self.graphs[2].gca().lines:
+                self.kx_delta_energy_cursor.remove()
+            if self.ky_delta_energy_cursor in self.graphs[1].gca().lines:
+                self.ky_delta_energy_cursor.remove()
+            if self.kx_ky_delta_energy_cursor in self.graphs[3].gca().lines:
+                self.kx_ky_delta_energy_cursor.remove()
+            self.kx_energy_cursor = self.graphs[2].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+            self.ky_energy_cursor = self.graphs[1].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+            self.kx_ky_energy_cursor = self.graphs[3].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+            
+            self.kx_delta_energy_cursor = self.graphs[2].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
+            self.ky_delta_energy_cursor = self.graphs[1].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
+            self.kx_ky_delta_energy_cursor = self.graphs[3].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
             # self.graphs[2].tight_layout()
             self.graphs[2].canvas.draw_idle()
             self.graphs[1].canvas.draw_idle()
@@ -409,26 +485,38 @@ data.loc[
             self.update_energy(self.slider1[0].value(),self.slider2[0].value(),self.slider3[0].value(), self.slider4[0].value())
             
         elif index in range(4,8):
-            if self.eh is not None:
-                self.eh.remove()
+            if self.energy_ky_cursor is not None:
+                self.energy_ky_cursor.remove()
+            if self.energy_delta_ky_cursor is not None:
+                self.energy_delta_ky_cursor.remove()
            
-            self.eh = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider1[1].value()].item(), color='r', linestyle='--')
+            self.energy_ky_cursor = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider1[1].value()].item(), color='r', linestyle='--')
+            self.energy_delta_ky_cursor = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider1[1].value()+self.slider2[1].value()].item(), color='r', linestyle='--')
             self.graphs[0].canvas.draw_idle()
             self.update_ky(self.slider1[1].value(), self.slider2[1].value(),self.slider3[1].value(), self.slider4[1].value())
         elif index in range (8,12):
             ax = self.graphs[0].gca()
-            if self.ev in ax.lines:
-                self.ev.remove()
-            self.ev = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
+            if self.energy_kx_cursor in ax.lines:
+                self.energy_kx_cursor.remove()
+            if self.energy_delta_kx_cursor in ax.lines:
+                self.energy_delta_kx_cursor.remove()
+            self.energy_kx_cursor = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
+            self.energy_delta_kx_cursor = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()+self.slider2[2].value()].item(), color='r', linestyle='--')
             self.graphs[0].canvas.draw_idle()
             self.update_kx(self.slider1[2].value(), self.slider2[2].value(),self.slider3[2].value(), self.slider4[2].value())
         elif index in range (12,16):
-            if self.pxv in self.graphs[0].gca().lines:
-                self.pxv.remove()
-            if self.pyh in self.graphs[0].gca().lines:
-                self.pyh.remove()
-            self.pyh = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
-            self.pxv = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
+            if self.energy_kxky_x in self.graphs[0].gca().lines:
+                self.energy_kxky_x.remove()
+            if self.energy_kxky_y in self.graphs[0].gca().lines:
+                self.energy_kxky_y.remove()
+            if self.energy_delta_kxky_x in self.graphs[0].gca().lines:
+                self.energy_delta_kxky_x.remove()
+            if self.energy_delta_kxky_y in self.graphs[0].gca().lines:
+                self.energy_delta_kxky_y.remove()
+            self.energy_kxky_y = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
+            self.energy_kxky_x = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
+            self.energy_delta_kxky_y = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[1]][self.slider1[3].value()+self.slider2[3].value()].item(), color='b', linestyle='--')
+            self.energy_delta_kxky_x = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[0]][self.slider3[3].value()+self.slider4[3].value()].item(), color='b', linestyle='--')
             self.graphs[0].canvas.draw_idle()
             self.update_dt(self.slider1[3].value(), self.slider2[3].value(), self.slider3[3].value(), self.slider4[3].value())
 
