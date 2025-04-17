@@ -12,6 +12,9 @@ from mpes_tools.fit_panel import fit_panel
 from IPython.core.getipython import get_ipython
 from mpes_tools.double_click_handler import SubplotClickHandler
 import xarray as xr
+from mpes_tools.right_click_handler import RightClickHandler
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtGui import QCursor
 
 #graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
 # Two vertical cursors and two horizontal cursors are defined in the main graph with each same color for the cursors being horizontal and vertical intercept each other in a dot so one can move either each cursor or the dot itself which will move both cursors. 
@@ -34,11 +37,17 @@ class Gui_3d(QMainWindow):
         plt.close(self.fig)
         self.canvas = FigureCanvas(self.fig)
         self.click_handlers = []
+        self.handler_list = []
+            
+        # for idx, ax in enumerate(self.axs.flatten()):
+        #     handler = SubplotClickHandler(ax, self.external_callback)
+        #     ax.figure.canvas.mpl_connect("button_press_event", handler.handle_double_click)
+        #     self.click_handlers.append(handler)
             
         for idx, ax in enumerate(self.axs.flatten()):
-            handler = SubplotClickHandler(ax, self.external_callback)
-            ax.figure.canvas.mpl_connect("button_press_event", handler.handle_double_click)
-            self.click_handlers.append(handler)
+            handler = RightClickHandler(self.canvas, ax,self.show_pupup_window)
+            self.canvas.mpl_connect("button_press_event", handler.on_right_click)
+            self.handler_list.append(handler)
         # plt.ioff()
         # add the checkboxes for EDC and MDC integration and the button to save the results
         self.checkbox_e = QCheckBox("Integrate_energy")
@@ -108,7 +117,8 @@ class Gui_3d(QMainWindow):
             self.data = self.data.assign_coords(Ekin=self.data.coords['Ekin'] -21.7)
 
         # define the cut for the spectra of the main graph
-        self.data2D_plot=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
+        # self.data2D_plot=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
+        self.data2D_plot=self.data.sel({self.data.dims[2]:slice(self.axis[2][t], self.axis[2][t + dt])}).sum(dim=self.data.dims[2])
         
         #Initialize the relevant prameters
         self.t=t
@@ -154,6 +164,96 @@ class Gui_3d(QMainWindow):
         self.graph_windows=[]
         
         print(data_array.dims)
+        
+    def show_pupup_window(self,canvas,ax):
+        if ax==self.axs[0,0]:
+            menu = QMenu(canvas)
+            action1 = menu.addAction("data_2D")
+            action2 = menu.addAction("cursors")
+    
+            action = menu.exec_(QCursor.pos())
+    
+            if action == action1:
+                print('data2D_plot=data.sel({data.dims[2]:slice('+f"{self.axis[2][self.slider1.value()]:.2f}"+', '+f"{self.axis[2][self.slider1.value()+self.slider2.value()+1]:.2f}"+')}).sum(dim=data.dims[2])' )
+            elif action == action2:
+                print('yellow_vertical,yellow_horizontal,green_vertical,green_horizontal= '+ f"{self.dot1.center[0]:.2f} ,{self.dot1.center[1]:.2f},{self.dot2.center[0]:.2f},{self.dot2.center[1]:.2f}")
+
+        elif ax==self.axs[1,0]:
+            menu = QMenu(canvas)
+            action1 = menu.addAction("yellow_EDC")
+            action2 = menu.addAction("green_EDC")
+            action3 = menu.addAction("integrated_EDC")
+    
+            action = menu.exec_(QCursor.pos())
+    
+            if action == action1:
+                print("data.sel({data.dims[2]: slice(" +
+              f"{self.axis[2][self.slider1.value()]:.2f}, " +
+              f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
+              ")}).sum(dim=data.dims[2]).sel({data.dims[0]: " +
+              f"{self.dot1.center[1]:.2f}" +
+              "}, method='nearest')  # Yellow EDC")
+            elif action == action2: 
+                print("data.sel({data.dims[2]: slice(" +
+              f"{self.axis[2][self.slider1.value()]:.2f}, " +
+              f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
+              ")}).sum(dim=data.dims[2]).sel({data.dims[0]: " +
+              f"{self.dot2.center[1]:.2f}" +
+              "}, method='nearest')  # Green EDC")
+            elif action == action3: 
+                print("data.sel({data.dims[2]: slice(" +
+              f"{self.axis[2][self.slider1.value()]:.2f}, " +
+              f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
+              ")}).sum(dim=data.dims[2]).sel({data.dims[0]: slice(" +
+              f"{min(self.dot1.center[1], self.dot2.center[1]):.2f}, " +
+              f"{max(self.dot1.center[1], self.dot2.center[1]):.2f}" +
+              ")}).sum(dim=data.dims[0])  # Integrated EDC")
+        elif ax==self.axs[0,1]:
+            menu = QMenu(canvas)
+            action1 = menu.addAction("yellow_MDC")
+            action2 = menu.addAction("green_MDC")
+            action3 = menu.addAction("integrated_MDC")
+    
+            action = menu.exec_(QCursor.pos())
+    
+            if action == action1:
+                print("data.sel({data.dims[2]: slice(" +
+              f"{self.axis[2][self.slider1.value()]:.2f}, " +
+              f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
+              ")}).sum(dim=data.dims[2]).sel({data.dims[1]: " +
+              f"{self.dot1.center[0]:.2f}" +
+              "}, method='nearest')  # Yellow MDC")
+            elif action == action2: 
+                print("data.sel({data.dims[2]: slice(" +
+              f"{self.axis[2][self.slider1.value()]:.2f}, " +
+              f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
+              ")}).sum(dim=data.dims[2]).sel({data.dims[1]: " +
+              f"{self.dot2.center[0]:.2f}" +
+              "}, method='nearest')  # Green MDC")
+
+            elif action == action3: 
+                print("data.sel({data.dims[2]: slice(" +
+              f"{self.axis[2][self.slider1.value()]:.2f}, " +
+              f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
+              ")}).sum(dim=data.dims[2]).sel({data.dims[1]: slice(" +
+              f"{min(self.dot1.center[0], self.dot2.center[0]):.2f}, " +
+              f"{max(self.dot1.center[0], self.dot2.center[0]):.2f}" +
+              ")}).sum(dim=data.dims[1])  # Integrated MDC")
+        elif ax==self.axs[1,1]:
+            menu = QMenu(canvas)
+            action1 = menu.addAction("intensity box")
+            action = menu.exec_(QCursor.pos())
+    
+            if action == action1:
+                # Integrated intensity box
+                print("data.loc[{data.dims[0]: slice(" +
+              f"{min(self.dot1.center[1], self.dot2.center[1]):.2f}, " +
+              f"{max(self.dot1.center[1], self.dot2.center[1]):.2f}" +
+              "), data.dims[1]: slice(" +
+              f"{min(self.dot1.center[0], self.dot2.center[0]):.2f}, " +
+              f"{max(self.dot1.center[0], self.dot2.center[0]):.2f}" +
+              ")}].sum(dim=(data.dims[0], data.dims[1]))  # Box integration")
+                
     def external_callback(self,ax):
         # print(f"External callback: clicked subplot ({i},{j})")
         if ax==self.axs[0,0]:
@@ -404,7 +504,8 @@ data.loc[{{data.dims[0]: slice(y0, y1), data.dims[1]: slice(x0, x1)}}].sum(dim=(
             self.axs[0, 1].clear()
             self.axs[1, 0].clear()
             #update the main graph/ spectra
-            self.data2D_plot=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
+            # self.data2D_plot=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
+            self.data2D_plot=self.data.sel({self.data.dims[2]:slice(self.axis[2][t], self.axis[2][t + dt])}).sum(dim=self.data.dims[2])
             im.set_array(self.data2D_plot)
             # show the cuts for the EDC and MDC
             if self.checkbox_e.isChecked() and self.checkbox_k.isChecked():
