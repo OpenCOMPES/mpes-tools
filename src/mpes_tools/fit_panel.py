@@ -19,7 +19,7 @@ from mpes_tools.graphs import showgraphs
 
 
 class fit_panel(QMainWindow):
-    def __init__(self,data,c1,c2,t,dt,panel):
+    def __init__(self,data,t,dt,panel):
         super().__init__()
 
         self.setWindowTitle("Main Window")
@@ -74,7 +74,7 @@ class fit_panel(QMainWindow):
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
         # self.slider.setMaximum(len(axis[2])-1)
-        self.slider.setMaximum(len(data[data.dims[2]])-1)
+        self.slider.setMaximum(len(data[data.dims[1]])-1)
         self.slider.setValue(t)
         self.slider.valueChanged.connect(self.update_label)
         self.slider2 = QSlider(Qt.Horizontal)
@@ -86,8 +86,8 @@ class fit_panel(QMainWindow):
         # self.label = QLabel("Slider Value: {t}")
         # self.label2 = QLabel("Slider Value: {dt}")
         
-        self.label = QLabel(f"{data.dims[2]}: {t}")
-        self.label2 = QLabel("Δ"+f"{data.dims[2]}: {dt}")
+        self.label = QLabel(f"{data.dims[1]}: {t}")
+        self.label2 = QLabel("Δ"+f"{data.dims[1]}: {dt}")
 
         # Create two checkboxes
         self.checkbox1 = QCheckBox("Multiply with Fermi Dirac")
@@ -241,34 +241,22 @@ class fit_panel(QMainWindow):
         self.t0_state = False
         self.offset_state = False
         self.data=data
-        x_min = min(c1, c2)
-        x_max = max(c1, c2)
-        # print('xmin=',x_min,'xmax=',x_max)
-        if panel =='box':
-            self.y=data
-        elif panel == data.dims[1]:
-            self.data_t=data.sel({data.dims[0]:slice(x_min, x_max)}).sum(dim=data.dims[0])
-            self.dim=data.dims[1]
-        elif panel ==data.dims[0]:
-            self.data_t=data.sel({data.dims[1]:slice(x_min, x_max)}).sum(dim=data.dims[1])
-            self.dim=data.dims[0]
-        self.panel=panel
         self.t=t
         self.dt=dt
-        # print(t,dt)
-        self.data=data
+        self.dim=data.dims[0]
+        self.panel=panel
         self.slider.setValue(self.t)
         self.slider2.setValue(self.dt)
-        # self.data_t=self.data
         self.plot_graph(t,dt)
         self.fit_results=[]
-        self.axs=data[data.dims[2]].data
+        self.axs=data[data.dims[1]].data
 
     def plot_graph(self,t,dt):
         self.axis.clear()
 
         if self.panel != 'box':
-            self.y=self.data_t.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
+            self.y=self.data.isel({self.data.dims[1]:slice(t, t+dt+1)}).sum(dim=self.data.dims[1])
+        
         self.y.plot(ax=self.axis)
         if self.checkbox0.isChecked():
             if self.cursor_handler is None:
@@ -287,8 +275,7 @@ class fit_panel(QMainWindow):
     def linear (self,x,a,b):
         return a*x+b
     def lorentzian(self,x, A, x0, gamma):
-        c=0.0000
-        return A / (1 + ((x - x0) / (gamma+c)) ** 2)
+        return A / (1 + ((x - x0) / (gamma)) ** 2)
     def fermi_dirac(self,x, mu, T):
         kb = 8.617333262145 * 10**(-5)  # Boltzmann constant in eV/K
         return 1 / (1 + np.exp((x - mu) / (kb * T)))
@@ -687,7 +674,7 @@ class fit_panel(QMainWindow):
             self.params['offset'].set(value=self.y_f.data.min())
         
         for i in range(min_val,max_val-self.dt):
-            self.y=self.data_t.isel({self.data.dims[2]:slice(i, i+self.dt+1)}).sum(dim=self.data.dims[2])
+            self.y=self.data.isel({self.data.dims[1]:slice(i, i+self.dt+1)}).sum(dim=self.data.dims[1])
             self.y_f=self.y.isel({self.dim:slice(cursors[0], cursors[1])})
             self.x_f=self.y_f[self.dim]
             self.axis.clear()
@@ -708,7 +695,7 @@ class fit_panel(QMainWindow):
         
             
         # sg=showgraphs(self.axs[min_val:max_val-self.dt], self.fit_results)
-        sg=showgraphs(self.data[self.data.dims[2]][min_val:max_val-self.dt], self.fit_results)
+        sg=showgraphs(self.data[self.data.dims[1]][min_val:max_val-self.dt], self.fit_results)
         sg.show()
         self.graph_windows.append(sg)
         
@@ -753,7 +740,7 @@ class fit_panel(QMainWindow):
         
         if self.t0_state==False:
             for i in range(len(self.axs)-self.dt):
-                self.y=self.data_t.isel({self.data.dims[2]:slice(i, i+self.dt+1)}).sum(dim=self.data.dims[2])
+                self.y=self.data.isel({self.data.dims[1]:slice(i, i+self.dt+1)}).sum(dim=self.data.dims[1])
                 self.y_f=self.y.isel({self.dim:slice(cursors[0], cursors[1])})
                 self.x_f=self.y_f[self.dim]
                 self.axis.clear()
@@ -773,7 +760,7 @@ class fit_panel(QMainWindow):
             self.x_f=self.y_f[self.dim]
             
             for i in range(0,mid_val-self.dt):
-                self.y=self.data_t.isel({self.data.dims[2]:slice(i, i+self.dt+1)}).sum(dim=self.data.dims[2])
+                self.y=self.data.isel({self.data.dims[1]:slice(i, i+self.dt+1)}).sum(dim=self.data.dims[1])
                 self.y_f=self.y.isel({self.dim:slice(cursors[0], cursors[1])})
                 self.x_f=self.y_f[self.dim]
                 self.axis.clear()
@@ -795,7 +782,7 @@ class fit_panel(QMainWindow):
             self.x_f=self.y_f[self.dim]
             
             for i in range(mid_val-self.dt,len(self.axs)-self.dt):
-                self.y=self.data_t.isel({self.data.dims[2]:slice(i, i+self.dt+1)}).sum(dim=self.data.dims[2])
+                self.y=self.data.isel({self.data.dims[1]:slice(i, i+self.dt+1)}).sum(dim=self.data.dims[1])
                 self.y_f=self.y.isel({self.dim:slice(cursors[0], cursors[1])})
                 self.x_f=self.y_f[self.dim]
                 self.axis.clear()
@@ -818,8 +805,8 @@ class fit_panel(QMainWindow):
                 self.fit_results.append(getattr(self, pname))
                 names.append(pname)
         # print('th dt',self.dt)    
-        # print('the xaxis',len(self.data[self.data.dims[2]][:len(self.data[self.data.dims[2]])-self.dt]))
-        sg=showgraphs(self.data[self.data.dims[2]][:len(self.data[self.data.dims[2]])-self.dt], self.fit_results,names,list_axis,list_plot_fits)
+        # print('the xaxis',len(self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-self.dt]))
+        sg=showgraphs(self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-self.dt], self.fit_results,names,list_axis,list_plot_fits)
         sg.show()
         self.graph_windows.append(sg)
 
