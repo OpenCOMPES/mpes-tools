@@ -42,11 +42,6 @@ class Gui_3d(QMainWindow):
         self.click_handlers = []
         self.handler_list = []
             
-        # for idx, ax in enumerate(self.axs.flatten()):
-        #     handler = SubplotClickHandler(ax, self.external_callback)
-        #     ax.figure.canvas.mpl_connect("button_press_event", handler.handle_double_click)
-        #     self.click_handlers.append(handler)
-            
         for idx, ax in enumerate(self.axs.flatten()):
             handler = RightClickHandler(self.canvas, ax,self.show_pupup_window)
             self.canvas.mpl_connect("button_press_event", handler.on_right_click)
