@@ -249,6 +249,7 @@ class fit_panel(QMainWindow):
         self.slider2.setValue(self.dt)
         self.plot_graph(t,dt)
         self.fit_results=[]
+        self.fit_results_err=[]
         self.axs=data[data.dims[1]].data
 
     def plot_graph(self,t,dt):
@@ -706,6 +707,7 @@ class fit_panel(QMainWindow):
         fixed_list=[]
         names=[]
         self.fit_results=[]
+        self.fit_results_err=[]
         def zero(x):
             return 0
         cursors= self.cursor_handler.cursors()
@@ -753,6 +755,11 @@ class fit_panel(QMainWindow):
                     array[i]=out.best_values[pname]
                     setattr(self, pname,array)
                     
+                    err_array = getattr(self, f"{pname}_err",np.zeros_like(array))
+                    stderr = out.params[pname].stderr
+                    err_array[i] = stderr
+                    setattr(self, f"{pname}_err", err_array)
+                    
         else:
             if self.mid_value_input.text() is not None:
                 mid_val = int(self.mid_value_input.text())
@@ -772,6 +779,11 @@ class fit_panel(QMainWindow):
                     array=getattr(self, pname)
                     array[i]=out.best_values[pname]
                     setattr(self, pname,array)
+                    
+                    err_array = getattr(self, f"{pname}_err",np.zeros_like(array))
+                    stderr = out.params[pname].stderr
+                    err_array[i] = stderr
+                    setattr(self, f"{pname}_err", err_array)
             sigma_mean= getattr(self, 'sigma')[0:mid_val-self.dt].mean()
             self.params['sigma'].set(value=sigma_mean, vary=False )
             # print(sigma_mean)
@@ -780,6 +792,7 @@ class fit_panel(QMainWindow):
                 # print(p)
             self.y_f=self.y.isel({self.dim:slice(cursors[0], cursors[1])})
             self.x_f=self.y_f[self.dim]
+            
             
             for i in range(mid_val-self.dt,len(self.axs)-self.dt):
                 self.y=self.data.isel({self.data.dims[1]:slice(i, i+self.dt+1)}).sum(dim=self.data.dims[1])
@@ -794,19 +807,26 @@ class fit_panel(QMainWindow):
                     array=getattr(self, pname)
                     array[i]=out.best_values[pname]
                     setattr(self, pname,array)
+                    
+                    err_array = getattr(self, f"{pname}_err",np.zeros_like(array))
+                    stderr = out.params[pname].stderr
+                    err_array[i] = stderr
+                    setattr(self, f"{pname}_err", err_array)
             # print('second T',getattr(self, 'T'))
         if self.dt>0:
             # self.axs=self.axs[:-self.dt]
             for pname, par in self.params.items():
                 self.fit_results.append(getattr(self, pname)[:-self.dt])
+                self.fit_results_err.append(getattr(self, f"{pname}_err")[:-self.dt]) 
                 names.append(pname)
         else:
             for pname, par in self.params.items():
                 self.fit_results.append(getattr(self, pname))
+                self.fit_results_err.append(getattr(self, f"{pname}_err"))
                 names.append(pname)
         # print('th dt',self.dt)    
         # print('the xaxis',len(self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-self.dt]))
-        sg=showgraphs(self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-self.dt], self.fit_results,names,list_axis,list_plot_fits)
+        sg=showgraphs(self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-self.dt], self.fit_results,self.fit_results_err,names,list_axis,list_plot_fits)
         sg.show()
         self.graph_windows.append(sg)
 
