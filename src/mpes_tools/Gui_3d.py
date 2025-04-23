@@ -54,9 +54,6 @@ class Gui_3d(QMainWindow):
         self.checkbox_k = QCheckBox("Integrate_k")
         self.checkbox_k.stateChanged.connect(self.checkbox_k_changed)
 
-        self.save_button = QPushButton('Extract results', self)
-        self.save_button.clicked.connect(self.create_new_cell)
-        # self.save_button.clicked.connect(self.save_results)
         
         #create the layout
         h_layout = QHBoxLayout()
@@ -84,7 +81,6 @@ class Gui_3d(QMainWindow):
         layout.addLayout(checkbox_layout)
         layout.addLayout(h_layout)
         layout.addWidget(self.canvas)
-        layout.addWidget(self.save_button)
         
         slider_layout= QHBoxLayout()
         self.slider1 = QSlider(Qt.Horizontal)
@@ -139,8 +135,6 @@ class Gui_3d(QMainWindow):
         self.slider1.valueChanged.connect(self.slider1_changed)
         self.slider2.valueChanged.connect(self.slider2_changed)
         
-        #run the main code to show the graphs and cursors
-        # self.show_graphs(t,dt)
         
         #create a menu for the fit panel
         menu_bar = self.menuBar()
@@ -237,33 +231,33 @@ class Gui_3d(QMainWindow):
         self.dot1.center = (x_val, self.dot1.center[1])
         base = self.cursor_label[0].text().split(':')[0]
         self.cursor_label[0].setText(f"{base}: {x_val:.2f}")
-        self.fig.canvas.draw_idle()
         self.update_mdc()
         self.box()
+        self.fig.canvas.draw_idle() 
     def changes_cursor_horizontal_1(self):
         y_val= self.cursor_horiz1.get_ydata()[0]
         self.dot1.center = (self.dot1.center[0],y_val)
         base = self.cursor_label[1].text().split(':')[0]
         self.cursor_label[1].setText(f"{base}: {y_val:.2f}")
-        self.fig.canvas.draw_idle()
         self.update_edc()
         self.box()
+        self.fig.canvas.draw_idle() 
     def changes_cursor_vertical_2(self):
         x_val= self.cursor_vert2.get_xdata()[0]
         self.dot2.center = (x_val, self.dot2.center[1])
         base = self.cursor_label[2].text().split(':')[0]
         self.cursor_label[2].setText(f"{base}: {x_val:.2f}")
-        self.fig.canvas.draw_idle()
         self.update_mdc()
         self.box()
+        self.fig.canvas.draw_idle() 
     def changes_cursor_horizontal_2(self):
         y_val= self.cursor_horiz2.get_ydata()[0]
         self.dot2.center = (self.dot2.center[0], y_val)
         base = self.cursor_label[3].text().split(':')[0]
         self.cursor_label[3].setText(f"{base}: {y_val:.2f}")
-        self.fig.canvas.draw_idle()
         self.update_edc()
         self.box()
+        self.fig.canvas.draw_idle() 
     def changes_dot1(self):
         x_val,y_val= self.dot1.center
         self.cursor_vert1.set_xdata([x_val,x_val])
@@ -272,10 +266,10 @@ class Gui_3d(QMainWindow):
         self.cursor_label[0].setText(f"{base}: {x_val:.2f}")
         base = self.cursor_label[1].text().split(':')[0]
         self.cursor_label[1].setText(f"{base}: {y_val:.2f}")
-        self.fig.canvas.draw_idle()
         self.update_edc()
         self.update_mdc()
         self.box()
+        self.fig.canvas.draw_idle() 
     def changes_dot2(self):
         x_val,y_val= self.dot2.center
         self.cursor_vert2.set_xdata([x_val,x_val])
@@ -284,10 +278,10 @@ class Gui_3d(QMainWindow):
         self.cursor_label[2].setText(f"{base}: {x_val:.2f}")
         base = self.cursor_label[3].text().split(':')[0]
         self.cursor_label[3].setText(f"{base}: {y_val:.2f}")
-        self.fig.canvas.draw_idle() 
         self.update_edc()
         self.update_mdc()
         self.box()
+        self.fig.canvas.draw_idle() 
    
     def show_pupup_window(self,canvas,ax):
         if ax==self.axs[0,0]:
@@ -378,138 +372,7 @@ class Gui_3d(QMainWindow):
               f"{max(self.dot1.center[0], self.dot2.center[0]):.2f}" +
               ")}].sum(dim=(data.dims[0], data.dims[1]))  # Box integration")
                 
-    def external_callback(self,ax):
-        # print(f"External callback: clicked subplot ({i},{j})")
-        if ax==self.axs[0,0]:
-            content= f"""
-data='your data_array'
-data = data.assign_coords(Ekin=data.coords['Ekin'] -21.7)
-#the 2D plot data
-data2D_plot=data.isel({{data.dims[2]:slice({self.slider1.value()}, {self.slider1.value()+self.slider2.value()+1})}}).sum(dim=data.dims[2])   
-
-            """
-        elif ax==self.axs[1,0]:
-            content= f"""
-data='your data_array'
-data = data.assign_coords(Ekin=data.coords['Ekin'] -21.7)
-#the 2D plot data
-data2D_plot=data.isel({{data.dims[2]:slice({self.slider1.value()}, {self.slider1.value()+self.slider2.value()+1})}}).sum(dim=data.dims[2])   
-# The yellow EDC
-data2D_plot.sel({{data.dims[0]:{self.dot1.center[1]}}}, method='nearest')
-# The green EDC
-data2D_plot.sel({{data.dims[0]:{self.dot2.center[1]}}}, method='nearest')
-# the integrated EDC
-data2D_plot.sel({{data.dims[0]:slice(min({self.dot2.center[1]},{self.dot1.center[1]}), max({self.dot2.center[1]},{self.dot1.center[1]}))}}).sum(dim=data.dims[0])
-
-            """
-        elif ax==self.axs[0,1]:
-            content= f"""
-data='your data_array'
-data = data.assign_coords(Ekin=data.coords['Ekin'] -21.7)
-#the 2D plot data
-data2D_plot=data.isel({{data.dims[2]:slice({self.slider1.value()}, {self.slider1.value()+self.slider2.value()+1})}}).sum(dim=data.dims[2])   
-# The yellow MDC
-data2D_plot.sel({{data.dims[1]:{self.dot1.center[0]}}}, method='nearest')
-# The green MDC
-data2D_plot.sel({{data.dims[1]:{self.dot2.center[0]}}}, method='nearest')
-# the integrated MDC
-data2D_plot.sel({{data.dims[1]:slice(min({self.dot2.center[0]},{self.dot1.center[0]}), max({self.dot2.center[0]},{self.dot1.center[0]}))}}).sum(dim=data.dims[1])
-
-            """
-        elif ax==self.axs[1,1]:
-            content= f"""
-data='your data_array'
-data = data.assign_coords(Ekin=data.coords['Ekin'] -21.7)
-#the intensity box data
-data.loc[{{data.dims[0]: slice(*sorted([{self.dot1.center[1]}, {self.dot2.center[1]}])), 
-           data.dims[1]: slice(*sorted([{self.dot1.center[0]}, {self.dot2.center[0]}]))}}].sum(dim=(data.dims[0], data.dims[1]))
-
-            """
-        shell = get_ipython()
-        payload = dict(
-            source='set_next_input',
-            text=content,
-            replace=False,
-        )
-        shell.payload_manager.write_payload(payload, single=False)
-        # shell.run_cell("%gui qt")
-        QApplication.processEvents()
-        print('results extracted!')
-        
-    def create_new_cell(self):
-        content = f"""
-# Code generated by GUI for the following parameters:
-import matplotlib.pyplot as plt
-
-# data= 'your data_array'
-data=V1
-data = data.assign_coords(Ekin=data.coords['Ekin'] -21.7)
-time1={self.axis[2][self.slider1.value()]}
-time2={self.axis[2][self.slider1.value()+self.slider2.value()]}
-t={self.slider1.value()}
-dt={self.slider2.value()}
-data2D_plot=data.isel({{data.dims[2]:slice(t, t+dt+1)}}).sum(dim=data.dims[2])
-yellowline_edc_energy={self.dot1.center[1]}
-greenline_edc_energy={self.dot2.center[1]}
-yellowline_mdc_momentum={self.dot1.center[0]}
-greenline_mdc_momentum={self.dot2.center[0]}
-#plot Data_2d between t and t+dt
-fig,ax=plt.subplots(1,1,figsize=(12,8))
-data2D_plot.plot(ax=ax, cmap='terrain', add_colorbar=False)
-#plot EDC yellow and green
-fig,ax=plt.subplots(1,1,figsize=(12,8))
-data2D_plot.sel({{data.dims[0]:yellowline_edc_energy}}, method='nearest').plot(ax=ax,color='orange')
-data2D_plot.sel({{data.dims[0]:greenline_edc_energy}}, method='nearest').plot(ax=ax,color='green')
-#plot integrated EDC
-fig,ax=plt.subplots(1,1,figsize=(12,8))
-data2D_plot.sel({{data.dims[0]:slice(min(greenline_edc_energy,yellowline_edc_energy), max(greenline_edc_energy,yellowline_edc_energy))}}).sum(dim=data.dims[0]).plot(ax=ax)
-#plot MDC yellow and green
-fig,ax=plt.subplots(1,1,figsize=(12,8))
-data2D_plot.sel({{data.dims[1]:yellowline_mdc_momentum}}, method='nearest').plot(ax=ax,color='orange')
-data2D_plot.sel({{data.dims[1]:greenline_mdc_momentum}}, method='nearest').plot(ax=ax,color='green')
-#plot integrated MDC
-fig,ax=plt.subplots(1,1,figsize=(12,8))
-data2D_plot.sel({{data.dims[1]:slice(min(greenline_mdc_momentum,yellowline_mdc_momentum), max(greenline_mdc_momentum,yellowline_mdc_momentum))}}).sum(dim=data.dims[1]).plot(ax=ax)
-#plot integrated intensity in the box between the cursors
-fig,ax=plt.subplots(1,1,figsize=(12,8))
-x0,y0=({self.dot1.center[0]},{self.dot1.center[1]})
-x1,y1=({self.dot2.center[0]},{self.dot2.center[1]})
-x0, x1 = sorted([x0, x1])
-y0, y1 = sorted([y0, y1])
-data.loc[{{data.dims[0]: slice(y0, y1), data.dims[1]: slice(x0, x1)}}].sum(dim=(data.dims[0], data.dims[1])).plot(ax=ax)
-
-        """
-        shell = get_ipython()
-        payload = dict(
-            source='set_next_input',
-            text=content,
-            replace=False,
-        )
-        shell.payload_manager.write_payload(payload, single=False)
-        shell.run_cell('pass')
-        print('results extracted!')
-    def save_results(self):#save the relevant results in a .pkl file which can be accessed easily for Jupyter Notebook workflow
-        results = {
-            'integrated_edc': self.integrated_edc,
-            'integrated_mdc': self.integrated_mdc,
-            'yellowline_edc': self.data2D_plot.sel({self.data.dims[0]:self.dot1.center[1]}, method='nearest'), 
-            'greenline_edc': self.data2D_plot.sel({self.data.dims[0]:self.dot2.center[1]}, method='nearest'),
-            'yellowline_mdc': self.data2D_plot.sel({self.data.dims[1]: self.dot1.center[0]}, method='nearest'),
-            'greenline_mdc': self.data2D_plot.sel({self.data.dims[1]: self.dot2.center[0]}, method='nearest'),
-            'current_spectra': self.data2D_plot,
-            'intensity_box': self.int,
-            'yellow_vertical': self.dot1.center[0],
-            'yellow_horizontal': self.dot1.center[1],
-            'green_vertical': self.dot2.center[0],
-            'green_horizontal': self.dot2.center[1],
-            'delay1':self.axis[2][self.slider1.value()],
-            'delay2':self.axis[2][self.slider1.value()+self.slider2.value()]
-        }
-        with open('gui_results.pkl', 'wb') as f:
-            pickle.dump(results, f)
-        # with open('gui_results.json', 'w') as f:
-        #     json.dump(results, f)
-        print("Results saved!")
+   
                   
     def main_graph_cursor_changed(self, index): #set manually the values for the cursors in the main graph
         value = self.cursor_inputs[index].text()
@@ -558,21 +421,12 @@ data.loc[{{data.dims[0]: slice(y0, y1), data.dims[1]: slice(x0, x1)}}].sum(dim=(
         self.update_show()
         self.dt=self.slider2.value()
     def checkbox_e_changed(self, state): # Checkbox for integrating the EDC between the cursors
-        if state == Qt.Checked:
-            self.integrate_E()
-        else:
-            self.data2D_plot.sel({self.data.dims[0]:self.dot1.center[1]}, method='nearest').plot(ax=self.axs[1,0],color='orange')
-            self.data2D_plot.sel({self.data.dims[0]:self.dot2.center[1]}, method='nearest').plot(ax=self.axs[1,0],color='green')
-            # self.update_show(self.slider1.value(),self.slider2.value())
+        self.update_edc()
+        self.fig.canvas.draw_idle()
     def checkbox_k_changed(self, state): # Checkbox for integrating the MDC between the cursors
-        if state == Qt.Checked:
-            self.integrate_k()
-        else:
-            self.data2D_plot.sel({self.data.dims[1]:self.dot1.center[0]}, method='nearest').plot(ax=self.axs[0,1],color='orange')
-            self.data2D_plot.sel({self.data.dims[1]:self.dot2.center[0]}, method='nearest').plot(ax=self.axs[0,1],color='green')
-            # self.update_show(self.slider1.value(),self.slider2.value())
+        self.update_mdc()
+        self.fig.canvas.draw_idle()
 
-    
     def fit_energy_panel(self,event): # open up the fit panel for the EDC 
         x_min = min(self.dot2.center[1], self.dot1.center[1])
         x_max = max(self.dot2.center[1], self.dot1.center[1])
@@ -617,7 +471,7 @@ data.loc[{{data.dims[0]: slice(y0, y1), data.dims[1]: slice(x0, x1)}}].sum(dim=(
         # self.data2D_plot.isel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0]).plot(ax=self.axs[1,0])
         self.integrated_edc=self.data2D_plot.sel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0])
         self.integrated_edc.plot(ax=self.axs[1,0])
-        self.fig.canvas.draw_idle()
+        # self.fig.canvas.draw_idle()
 
     def integrate_k(self): # integrate MDC between the two cursors in the main graph
         self.axs[0, 1].clear()
@@ -628,7 +482,7 @@ data.loc[{{data.dims[0]: slice(y0, y1), data.dims[1]: slice(x0, x1)}}].sum(dim=(
         # self.data2D_plot.isel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1]).plot(ax=self.axs[0,1])
         self.integrated_mdc=self.data2D_plot.sel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1])
         self.integrated_mdc.plot(ax=self.axs[0,1])
-        self.fig.canvas.draw_idle()
+        # self.fig.canvas.draw_idle()
 
     def box(self): # generate the intensity graph between the four cursors in the main graph
         self.axs[1, 1].clear()
