@@ -13,6 +13,7 @@ from mpes_tools.double_click_handler import SubplotClickHandler
 from mpes_tools.right_click_handler import RightClickHandler
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QCursor
+from colorscale_slider_handler import colorscale_slider
 
 class show_4d_window(QMainWindow):
     def __init__(self,data_array: xr.DataArray):
@@ -40,27 +41,34 @@ class show_4d_window(QMainWindow):
         self.click_handlers=[]
         self.handler_list=[]
         self.axis_list=[]
+        self.graph_layout_list=[]
+        self.color_graph_list=[]
+        self.list=[]
         plt.ioff()
         for i in range(2):
             for j in range(2):
-                graph_window = QWidget()
-                graph_layout = QVBoxLayout()
-                graph_window.setLayout(graph_layout)
+                self.graph_window = QWidget()
+                self.graph_layout = QVBoxLayout()
+                self.graph_window.setLayout(self.graph_layout)
 
                 # Create a figure and canvas for the graph
                 figure, axis = plt.subplots(figsize=(10, 10))
                 plt.close(figure)
                 canvas = FigureCanvas(figure)
-                # handler = SubplotClickHandler(axis, self.external_callback)
-                # canvas.mpl_connect("button_press_event", handler.handle_double_click)
-                # self.click_handlers.append(handler)
+
                 handler = RightClickHandler(canvas, axis,self.show_pupup_window)
                 canvas.mpl_connect("button_press_event", handler.on_right_click)
                 self.handler_list.append(handler)
                 
-                graph_layout.addWidget(canvas)
+                # self.color_graph=QHBoxLayout()
+                # self.color_graph.addWidget(canvas)
+                
+                self.graph_layout.addWidget(canvas)
+                # self.graph_layout.addWidget(self.color_graph)
                 self.axis_list.append(axis)
                 self.canvases.append(canvas)
+                
+                # self.color_graph_list.append(self.color_graph)
                 
                 
                 slider_layout= QHBoxLayout()
@@ -105,12 +113,12 @@ class show_4d_window(QMainWindow):
                 # slider2.valueChanged.connect(self.slider_changed)
 
                 # Add the slider to the layout
-                graph_layout.addLayout(slider_layout)
-                graph_layout.addLayout(slider_layout_2)
+                self.graph_layout.addLayout(slider_layout)
+                self.graph_layout.addLayout(slider_layout_2)
                 # graph_layout.addWidget(slider3)
                 # graph_layout.addWidget(slider2)
 
-                layout.addWidget(graph_window, i, j)
+                layout.addWidget(self.graph_window, i, j)
                 self.graphs.append(figure)
                 self.slider1.append(slider1)
                 self.slider2.append(slider2)
@@ -118,14 +126,8 @@ class show_4d_window(QMainWindow):
                 self.slider4.append(slider4)
                 self.sliders.extend([slider1, slider2,slider3, slider4])
                 self.slider_labels.extend([slider1_label, slider2_label,slider3_label, slider4_label])
-                
-        # self.xv = None
-        # self.yv = None
-        # self.energy_kx_cursor = None
-        # self.energy_ky_cursor = None
-        # self.kx_ky_energy_cursor= None
-        # self.energy_kxky_x=None
-        # self.energy_kxky_y=None
+                self.graph_layout_list.append(self.graph_layout)
+
 
         for slider in self.slider1:   
             slider.valueChanged.connect(self.slider_changed)
@@ -155,7 +157,6 @@ class show_4d_window(QMainWindow):
         graph_menu.addAction(open_graphy_action)
         # file_menu.addAction(open_graph_action)
         self.graph_windows = []
-        self.ce=None
 
         self.show()
         self.load_data(data_array)
@@ -367,28 +368,55 @@ data.loc[
         self.slider_labels[15].setText("Δ"+self.axes[0])
         
         
+        # data_avg=self.data_array.loc[{self.axes[2]:slice(self.data_array[self.axes[2]][self.slider1[0].value()].item(),self.data_array[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item()),
+        #                               self.axes[3]:slice(self.data_array[self.axes[3]][self.slider3[0].value()].item(),self.data_array[self.axes[3]][self.slider3[0].value()+self.slider4[0].value()].item())}].mean(dim=(self.axes[2], self.axes[3]))
+        
+        data_avg=self.data_array.isel({self.axes[2]:slice(0,0), self.axes[3]:slice(0,0)}).mean(dim=(self.axes[2], self.axes[3]))
+        self.im0=data_avg.T.plot(ax=self.graphs[0].gca(),cmap='terrain', add_colorbar=False)
+        
+        data_avg=self.data_array.isel({self.axes[1]:slice(0,0), self.axes[3]:slice(0,0)}).mean(dim=(self.axes[1], self.axes[3]))
+        self.im1=data_avg.T.plot(ax=self.graphs[1].gca(),cmap='terrain', add_colorbar=False)
+        
+        data_avg=self.data_array.isel({self.axes[0]:slice(0,0), self.axes[3]:slice(0,0)}).mean(dim=(self.axes[0], self.axes[3]))
+        self.im2=data_avg.T.plot(ax=self.graphs[2].gca(),cmap='terrain', add_colorbar=False)
+        
+        data_avg=self.data_array.isel({self.axes[1]:slice(0,0), self.axes[0]:slice(0,0)}).mean(dim=(self.axes[1], self.axes[0]))
+        self.im3=data_avg.plot(ax=self.graphs[3].gca(),cmap='terrain', add_colorbar=False)
+        
         self.update_energy(self.slider1[0].value(),self.slider2[0].value(),self.slider3[0].value(), self.slider4[0].value())
-
+        
         self.update_ky(self.slider1[1].value(), self.slider2[1].value(),self.slider3[1].value(), self.slider4[1].value())
     
         self.update_kx(self.slider1[2].value(), self.slider2[2].value(),self.slider3[2].value(), self.slider4[2].value())
         
         self.update_dt(self.slider1[3].value(), self.slider2[3].value(), self.slider3[3].value(), self.slider4[3].value())
+        
+        self.graphs[0].gca().figure.colorbar(self.im0, ax=self.graphs[0].gca())
     
+        print('the limits=',[self.data_array.min(),self.data_array.max()])
+        
+        self.im0.set_clim([self.data_array.min(),self.data_array.max()])
+        self.im1.set_clim([self.data_array.min(),self.data_array.max()])
+        self.im2.set_clim([self.data_array.min(),self.data_array.max()])
+        self.im3.set_clim([self.data_array.min(),self.data_array.max()])
     
+        colorscale_slider(self.graph_layout_list[0], self.im0, self.canvases[0], [self.data_array.min(),self.data_array.max()])
+        colorscale_slider(self.graph_layout_list[1], self.im1, self.canvases[1], [self.data_array.min(),self.data_array.max()])
+        colorscale_slider(self.graph_layout_list[2], self.im2, self.canvases[2], [self.data_array.min(),self.data_array.max()])
+        colorscale_slider(self.graph_layout_list[3], self.im3, self.canvases[3], [self.data_array.min(),self.data_array.max()])
     def update_energy(self,Energy,dE,te,dte):
-        self.ce_state=True
         E1=self.data_array[self.axes[2]][Energy].item()
         E2=self.data_array[self.axes[2]][Energy+dE].item()
         te1=self.data_array[self.axes[3]][te].item()
         te2=self.data_array[self.axes[3]][te+dte].item()
-
         ax=self.graphs[0].gca()
-        ax.cla() 
-        data_avg=self.data_array.loc[{self.axes[2]:slice(E1,E2), self.axes[3]:slice(te1,te2)}].mean(dim=(self.axes[2], self.axes[3]))
-        self.im=data_avg.T.plot(ax=ax,cmap='terrain', add_colorbar=False)
-        ax.set_title(f'energy: {E1:.2f}, E+dE: {E2:.2f} , t: {te1:.2f}, t+dt: {te2:.2f}')
         
+        data_avg=self.data_array.loc[{self.axes[2]:slice(E1,E2), self.axes[3]:slice(te1,te2)}].mean(dim=(self.axes[2], self.axes[3]))
+        self.im0.set_array(data_avg.T.values) 
+        # vmin, vmax = np.min(data_avg), np.max(data_avg)
+        # self.im0.set_clim(vmin, vmax)  # Update the limits of the colormap
+        ax.set_aspect('auto')
+        ax.set_title(f'energy: {E1:.2f}, E+dE: {E2:.2f} , t: {te1:.2f}, t+dt: {te2:.2f}')
         self.energy_kx_cursor = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
         self.energy_ky_cursor = ax.axhline(y=self.data_array.coords[self.axes[1]][self.slider1[1].value()].item(), color='r', linestyle='--')
         self.energy_kxky_x = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
@@ -408,8 +436,9 @@ data.loc[
         ty2=self.data_array[self.axes[3]][ty+dty].item()
         
         ax=self.graphs[1].gca()
-        ax.cla() 
-        self.data_array.loc[{self.axes[1]:slice(y1,y2), self.axes[3]:slice(ty1,ty2)}].mean(dim=(self.axes[1], self.axes[3])).T.plot(ax=ax,cmap='terrain', add_colorbar=False)
+        data_avg=self.data_array.loc[{self.axes[1]:slice(y1,y2), self.axes[3]:slice(ty1,ty2)}].mean(dim=(self.axes[1], self.axes[3]))
+        self.im1.set_array(data_avg.T.values) 
+        ax.set_aspect('auto')
         ax.set_title(f'ky: {y1:.2f}, ky+dky: {y2:.2f} , t: {ty1:.2f}, t+dt: {ty2:.2f}')
         self.ky_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
         self.ky_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
@@ -424,8 +453,9 @@ data.loc[
         tx2=self.data_array[self.axes[3]][tx+dtx].item()
         
         ax=self.graphs[2].gca()
-        ax.cla() 
-        self.data_array.loc[{self.axes[0]:slice(x1,x2), self.axes[3]:slice(tx1,tx2)}].mean(dim=(self.axes[0], self.axes[3])).T.plot(ax=ax,cmap='terrain', add_colorbar=False)
+        data_avg=self.data_array.loc[{self.axes[0]:slice(x1,x2), self.axes[3]:slice(tx1,tx2)}].mean(dim=(self.axes[0], self.axes[3]))
+        self.im2.set_array(data_avg.T.values) 
+        ax.set_aspect('auto')
         ax.set_title(f'kx: {x1:.2f}, kx+dkx: {x2:.2f} , t: {tx1:.2f}, t+dt: {tx2:.2f}')
         self.kx_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
         self.kx_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
@@ -440,8 +470,10 @@ data.loc[
         xt2=self.data_array[self.axes[0]][xt+dxt].item()
         
         ax=self.graphs[3].gca()
-        ax.cla() 
-        self.data_array.loc[{self.axes[1]:slice(yt1,yt2), self.axes[0]:slice(xt1,xt2)}].mean(dim=(self.axes[1], self.axes[0])).plot(ax=ax,cmap='terrain', add_colorbar=False)
+  
+        data_avg=self.data_array.loc[{self.axes[1]:slice(yt1,yt2), self.axes[0]:slice(xt1,xt2)}].mean(dim=(self.axes[1], self.axes[0]))
+        self.im3.set_array(data_avg.values) 
+        ax.set_aspect('auto')
         ax.set_title(f'ky: {yt1:.2f}, ky+dky: {yt2:.2f} , kx: {xt1:.2f}, kx+dkx: {xt2:.2f}')
         self.kx_ky_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
         self.kx_ky_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
