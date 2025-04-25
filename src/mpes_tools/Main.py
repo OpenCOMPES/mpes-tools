@@ -65,7 +65,7 @@ class ARPES_Analyser(QMainWindow):
 
         self.graph_windows = []
         self.ce = None
-
+        
         self.show()
 
 
