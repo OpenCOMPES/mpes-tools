@@ -11,6 +11,7 @@ from mpes_tools.hdf5 import load_h5
 from mpes_tools.show_4d_window import show_4d_window
 import os
 from PyQt5.QtGui import QPixmap
+import nxarray
 
 class ARPES_Analyser(QMainWindow):
     def __init__(self):
@@ -69,18 +70,28 @@ class ARPES_Analyser(QMainWindow):
         self.show()
 
 
-    def open_file_phoibos(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open Text File", "", "Text Files (*.npz)")
-        if file_path: 
-            loaded_data = np.load(file_path)  
-        V1 = xr.DataArray(loaded_data['data_array'], dims=['Angle', 'Ekin','delay'], coords={'Angle': loaded_data['Angle'], 'Ekin': loaded_data['Ekin'],'delay': loaded_data['delay']})    
-        axis=[V1['Angle'],V1['Ekin']-21.7,V1['delay']]
-        # print(data.dims)
-        graph_window= Gui_3d(V1,0,0,'Phoibos')
         
+    def open_file_phoibos(self):
+        # ... existing code ...
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open File", "", "Data Files (*.npz *.nxs)")
+        if file_path:
+            if file_path.endswith('.npz'):
+                loaded_data = np.load(file_path)
+                V1 = xr.DataArray(loaded_data['data_array'], 
+                                dims=['Angle', 'Ekin','delay'], 
+                                coords={'Angle': loaded_data['Angle'], 
+                                       'Ekin': loaded_data['Ekin'],
+                                       'delay': loaded_data['delay']})
+            elif file_path.endswith('.nxs'):
+                V1=nxarray.load(file_path)
+                V1=V1.rename({'angular0':'Angle','energy':'Ekin','delay':'delay'})
+                V1=V1[list(V1.data_vars)[0]]
+
+        axis=[V1['Angle'],V1['Ekin']-21.7,V1['delay']]
+        graph_window= Gui_3d(V1,0,0,'Phoibos')
         graph_window.show()
         self.graph_windows.append(graph_window)
-        
+
     def open_file_dialoge(self):
         # Open file dialog to select a .h5 file
         file_path, _ = QFileDialog.getOpenFileName(self, "Open hdf5", "", "h5 Files (*.h5)")
