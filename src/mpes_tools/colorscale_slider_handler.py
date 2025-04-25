@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel,QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel,QHBoxLayout,QGridLayout
 from superqt import QRangeSlider
 from PyQt5.QtCore import Qt
 import numpy as np
@@ -9,7 +9,7 @@ import sys
 class colorscale_slider(QWidget):
     def __init__(self, layout, imshow_artist,canvas, limits=None):
         super().__init__()
-
+        self.case=False
         self.im = imshow_artist
         self.canvas = canvas
         self.colorbar = None  # Optional: set this externally if you want to update a colorbar
@@ -20,8 +20,12 @@ class colorscale_slider(QWidget):
             self.vmin,self.vmax= limits
         if self.vmin==self.vmax:
             self.vmax += 0.1
-        self.cmin, self.cmax = 10, 1e5
-
+        if self.vmax<10:
+            self.cmin, self.cmax = 10, 1e9
+            self.case=True
+        else:
+            self.cmin, self.cmax=self.vmin,self.vmax
+        print(self.vmin,self.vmax)
         # Slider Widget
         slider_widget = QWidget()
         slider_layout = QVBoxLayout(slider_widget)
@@ -29,15 +33,21 @@ class colorscale_slider(QWidget):
         self.slider = QRangeSlider(Qt.Vertical)
         self.slider.setFixedWidth(15)
         self.slider.setMinimum(int(1 * self.cmin))
-        self.slider.setMaximum(int(1* self.cmax))
-        self.slider.setValue([self.new_values(self.vmin), self.new_values(self.vmax)])
+        self.slider.setMaximum(int(1.5* self.cmax))
+        self.slider.setValue([float(self.vmin),float(self.vmax)])
+        if self.case :
+            self.slider.setValue([self.new_values(self.vmin), self.new_values(self.vmax)])
         # self.slider.valueChanged.connect(self.update_clim)
         self.slider.valueChanged.connect(lambda value: self.update_clim(value))
-
-        self.label = QLabel(f"{self.vmin:.2f} to {self.vmax:.2f}")
+        
+        self.vmin_label = QLabel(f"{self.vmin:.2e}")
+        self.vmax_label = QLabel(f"{self.vmax:.2e}")
+        # # self.label = QLabel(f"{self.vmin:.2f} to {self.vmax:.2f}")
+        # self.label = QLabel(f"{self.vmin:.2e} to {self.vmax:.2e}")
         # self.label = QLabel(' ')
-        slider_layout.addWidget(self.label)
+        slider_layout.addWidget(self.vmax_label)
         slider_layout.addWidget(self.slider)
+        slider_layout.addWidget(self.vmin_label)
 
         # New horizontal layout: slider left, canvas right
         h_container = QWidget()
@@ -45,9 +55,12 @@ class colorscale_slider(QWidget):
         h_layout.addWidget(slider_widget)
         h_layout.addWidget(self.canvas)
         h_layout.addWidget(self.canvas, stretch=1)
-
-        layout.insertWidget(0, h_container)
-
+        if isinstance(layout, QGridLayout):
+            layout.addWidget(h_container,0,0)
+        else:
+            layout.insertWidget(0, h_container)
+        
+        
     def new_values(self, x):
         a = (self.cmax - self.cmin) / (self.vmax - self.vmin)
         b = self.vmax * self.cmin - self.vmin * self.cmax
@@ -59,9 +72,12 @@ class colorscale_slider(QWidget):
         return (x - b) / a
 
     def update_clim(self, value):
-        vmin, vmax = self.inverse(value[0]), self.inverse(value[1])
+        vmin, vmax = value
+        if self.case:
+            vmin, vmax = self.inverse(value[0]), self.inverse(value[1])
         self.im.set_clim(vmin, vmax)
-        self.label.setText(f" {vmin:.2f} to {vmax:.2f}")
+        self.vmin_label.setText(f" {vmin:.2e}")
+        self.vmax_label.setText(f"{vmax:.2e}")
         if self.colorbar:
             self.colorbar.update_normal(self.im)
         self.canvas.draw_idle()
