@@ -19,35 +19,35 @@ class make_model:
                 print(header_item.text(),item.text())
                 if header_item.text()== "Fermi level":
                     self.params['mu'].set(value=float(item.text()))
-                    if table_widget.item(row, 0) is not None:
+                    if table_widget.item(row, 0) is not None and table_widget.item(row, 0).text().strip():
                         self.params['mu'].set(min=float(table_widget.item(row, 0).text()))
-                    if table_widget.item(row, 2) is not None:
+                    if table_widget.item(row, 2) is not None and table_widget.item(row, 2).text().strip():
                         self.params['mu'].set(max=float(table_widget.item(row, 2).text()))
                     if checkbox.isChecked():
                         self.params['mu'].vary = False
                         
                 elif header_item.text()== "Temperature":
                     self.params['T'].set(value=float(item.text()))
-                    if table_widget.item(row, 0) is not None:
+                    if table_widget.item(row, 0) is not None and table_widget.item(row, 0).text().strip():
                         self.params['T'].set(min=float(table_widget.item(row, 0).text()))
-                    if table_widget.item(row, 2) is not None:
+                    if table_widget.item(row, 2) is not None and table_widget.item(row, 2).text().strip():
                         self.params['T'].set(max=float(table_widget.item(row, 2).text()))
                     if checkbox.isChecked():
                         self.params['T'].vary = False
                 elif header_item.text()== "sigma":
                     self.params['sigma'].set(value=float(item.text()))
                     self.params['sigma'].set(min=0)
-                    if table_widget.item(row, 0) is not None:
+                    if table_widget.item(row, 0) is not None and table_widget.item(row, 0).text().strip():
                         self.params['sigma'].set(min=float(table_widget.item(row, 0).text()))
-                    if table_widget.item(row, 2) is not None:
+                    if table_widget.item(row, 2) is not None and table_widget.item(row, 2).text().strip():
                         self.params['sigma'].set(max=float(table_widget.item(row, 2).text()))
                     if checkbox.isChecked():
                         self.params['sigma'].vary = False
                 else:
                     self.params[header_item.text()].set(value=float(item.text()))
-                    if table_widget.item(row, 0) is not None:
+                    if table_widget.item(row, 0) is not None and table_widget.item(row, 0).text().strip():
                         self.params[header_item.text()].set(min=float(table_widget.item(row, 0).text()))
-                    if table_widget.item(row, 2) is not None:
+                    if table_widget.item(row, 2) is not None and table_widget.item(row, 2).text().strip():
                         self.params[header_item.text()].set(max=float(table_widget.item(row, 2).text()))
                     if checkbox.isChecked():
                         self.params[header_item.text()].vary = False
