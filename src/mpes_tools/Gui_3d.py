@@ -80,6 +80,7 @@ class Gui_3d(QMainWindow):
         
         for i in range(4):
             fig = Figure(figsize=(10, 8))  # optional: smaller size per plot
+            plt.close(fig)
             canvas = FigureCanvas(fig)
             ax = fig.add_subplot(111)
             self.canvases.append(canvas)
@@ -99,7 +100,6 @@ class Gui_3d(QMainWindow):
         layout.addLayout(checkbox_layout)
         layout.addLayout(h_layout)
         layout.addLayout(canvas_layout)
-        # layout.addWidget(self.canvas)
         
         slider_layout= QHBoxLayout()
         self.slider1 = QSlider(Qt.Horizontal)
@@ -186,6 +186,7 @@ class Gui_3d(QMainWindow):
         
         # plot the main graph
         self.im = self.data2D_plot.plot(ax=self.axes[0], cmap='terrain', add_colorbar=False)
+        self.axes[0].figure.colorbar(self.im, ax=self.axes[0])
         colorscale_slider(canvas_layout, self.im, self.axes[0].figure.canvas)
         
         # define the initial positions of the cursors in the main graph
