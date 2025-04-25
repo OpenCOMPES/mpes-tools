@@ -13,7 +13,7 @@ from mpes_tools.double_click_handler import SubplotClickHandler
 from mpes_tools.right_click_handler import RightClickHandler
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QCursor
-from colorscale_slider_handler import colorscale_slider
+from mpes_tools.colorscale_slider_handler import colorscale_slider
 
 class show_4d_window(QMainWindow):
     def __init__(self,data_array: xr.DataArray):

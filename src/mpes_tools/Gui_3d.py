@@ -17,9 +17,9 @@ from mpes_tools.right_click_handler import RightClickHandler
 from PyQt5.QtWidgets import QMenu,QGridLayout,QHBoxLayout, QSizePolicy,QLabel
 from PyQt5.QtGui import QCursor
 from mpes_tools.cursor_dot_handler import Cursor_dot_handler
-from cursor_handler import Cursor_handler
-from dot_handler import Dot_handler
-from colorscale_slider_handler import colorscale_slider
+from mpes_tools.cursor_handler import Cursor_handler
+from mpes_tools.dot_handler import Dot_handler
+from mpes_tools.colorscale_slider_handler import colorscale_slider
 from matplotlib.figure import Figure
 #graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
 # Two vertical cursors and two horizontal cursors are defined in the main graph with each same color for the cursors being horizontal and vertical intercept each other in a dot so one can move either each cursor or the dot itself which will move both cursors. 
