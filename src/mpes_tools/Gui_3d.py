@@ -14,11 +14,13 @@ from IPython.core.getipython import get_ipython
 from mpes_tools.double_click_handler import SubplotClickHandler
 import xarray as xr
 from mpes_tools.right_click_handler import RightClickHandler
-from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QMenu,QGridLayout,QHBoxLayout, QSizePolicy,QLabel
 from PyQt5.QtGui import QCursor
 from mpes_tools.cursor_dot_handler import Cursor_dot_handler
 from cursor_handler import Cursor_handler
 from dot_handler import Dot_handler
+from colorscale_slider_handler import colorscale_slider
+from matplotlib.figure import Figure
 #graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
 # Two vertical cursors and two horizontal cursors are defined in the main graph with each same color for the cursors being horizontal and vertical intercept each other in a dot so one can move either each cursor or the dot itself which will move both cursors. 
 class Gui_3d(QMainWindow):  
@@ -36,16 +38,15 @@ class Gui_3d(QMainWindow):
         central_widget.setLayout(layout)
         
         
-        self.fig, self.axs = plt.subplots(2,2,figsize=(20,16))
-        plt.close(self.fig)
-        self.canvas = FigureCanvas(self.fig)
+        # self.fig, self.axs = plt.subplots(2,2,figsize=(20,16))
+        # plt.close(self.fig)
+        # self.canvas = FigureCanvas(self.fig)
+        
+        
         self.click_handlers = []
         self.handler_list = []
             
-        for idx, ax in enumerate(self.axs.flatten()):
-            handler = RightClickHandler(self.canvas, ax,self.show_pupup_window)
-            self.canvas.mpl_connect("button_press_event", handler.on_right_click)
-            self.handler_list.append(handler)
+        
         # plt.ioff()
         # add the checkboxes for EDC and MDC integration and the button to save the results
         self.checkbox_e = QCheckBox("Integrate_energy")
@@ -73,6 +74,23 @@ class Gui_3d(QMainWindow):
             sub_layout.addWidget(label)
             sub_layout.addWidget(input_field)
             h_layout.addLayout(sub_layout)
+        
+        self.canvases = []
+        self.axes = []
+        
+        for i in range(4):
+            fig = Figure(figsize=(10, 8))  # optional: smaller size per plot
+            canvas = FigureCanvas(fig)
+            ax = fig.add_subplot(111)
+            self.canvases.append(canvas)
+            self.axes.append(ax)
+            
+        canvas_layout = QGridLayout()
+
+        canvas_layout.addWidget(self.canvases[0], 0, 0)
+        canvas_layout.addWidget(self.canvases[1], 0, 1)
+        canvas_layout.addWidget(self.canvases[2], 1, 0)
+        canvas_layout.addWidget(self.canvases[3], 1, 1)
 
         checkbox_layout= QHBoxLayout()
         # Add the canvas to the layout
@@ -80,7 +98,8 @@ class Gui_3d(QMainWindow):
         checkbox_layout.addWidget(self.checkbox_k)
         layout.addLayout(checkbox_layout)
         layout.addLayout(h_layout)
-        layout.addWidget(self.canvas)
+        layout.addLayout(canvas_layout)
+        # layout.addWidget(self.canvas)
         
         slider_layout= QHBoxLayout()
         self.slider1 = QSlider(Qt.Horizontal)
@@ -103,6 +122,14 @@ class Gui_3d(QMainWindow):
         slider_layout.addWidget(self.slider2_label)
         layout.addLayout(slider_layout)
 
+
+        for idx, ax in enumerate(self.axes):
+            handler = RightClickHandler(self.canvases[idx], ax,self.show_pupup_window)
+            self.canvases[idx].mpl_connect("button_press_event", handler.on_right_click)
+            self.handler_list.append(handler)
+        
+
+
         #define the data_array
         self.data=data_array
         self.axis=[data_array.coords[dim].data for dim in data_array.dims]
@@ -111,8 +138,8 @@ class Gui_3d(QMainWindow):
             self.data = self.data.assign_coords(Ekin=self.data.coords['Ekin'] -21.7)
 
         # define the cut for the spectra of the main graph
-        # self.data2D_plot=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).sum(dim=self.data.dims[2])
-        self.data2D_plot=self.data.sel({self.data.dims[2]:slice(self.axis[2][t], self.axis[2][t + dt])}).sum(dim=self.data.dims[2])
+        # self.data2D_plot=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).mean(dim=self.data.dims[2])
+        self.data2D_plot=self.data.sel({self.data.dims[2]:slice(self.axis[2][t], self.axis[2][t + dt])}).mean(dim=self.data.dims[2])
         
         #Initialize the relevant prameters
         self.t=t
@@ -158,7 +185,8 @@ class Gui_3d(QMainWindow):
         print(data_array.dims)
         
         # plot the main graph
-        self.im = self.data2D_plot.plot(ax=self.axs[0, 0], cmap='terrain', add_colorbar=False)
+        self.im = self.data2D_plot.plot(ax=self.axes[0], cmap='terrain', add_colorbar=False)
+        colorscale_slider(canvas_layout, self.im, self.axes[0].figure.canvas)
         
         # define the initial positions of the cursors in the main graph
         
@@ -166,10 +194,10 @@ class Gui_3d(QMainWindow):
         initial_y = 0
         initial_x2 = 0.5
         initial_y2 = 0.5
-        ax = self.axs[0, 0]
+        ax = self.axes[0]
         # define the lines for the cursors
-        ymin, ymax = self.axs[0, 0].get_ylim()
-        xmin, xmax = self.axs[0, 0].get_ylim()
+        ymin, ymax = self.axes[0].get_ylim()
+        xmin, xmax = self.axes[0].get_ylim()
         ymin, ymax = 5 * ymin, 5 * ymax
         xmin, xmax = 5 * xmin, 5 * xmax
         self.cursor_vert1 = Line2D([initial_x, initial_x], [ymin, ymax], color='yellow', linewidth=2, picker=10, linestyle='--')
@@ -205,27 +233,29 @@ class Gui_3d(QMainWindow):
         # define the integrated EDC and MDC 
         x_min = min(self.dot2.center[1], self.dot1.center[1])
         x_max = max(self.dot2.center[1], self.dot1.center[1])
-        self.integrated_edc=self.data2D_plot.sel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0])
+        self.integrated_edc=self.data2D_plot.sel({self.data.dims[0]:slice(x_min, x_max)}).mean(dim=self.data.dims[0])
         x_min = min(self.dot1.center[0], self.dot2.center[0])
         x_max = max(self.dot1.center[0], self.dot2.center[0])
-        self.integrated_mdc=self.data2D_plot.sel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1])
+        self.integrated_mdc=self.data2D_plot.sel({self.data.dims[1]:slice(x_min, x_max)}).mean(dim=self.data.dims[1])
         self.active_handler = None
-        self.edc_yellow, = self.axs[1, 0].plot([], [], color='orange')
-        self.edc_green, = self.axs[1, 0].plot([], [], color='green')
+        self.edc_yellow, = self.axes[2].plot([], [], color='orange')
+        self.edc_green, = self.axes[2].plot([], [], color='green')
         self.update_show() 
-        self.fig.canvas.draw_idle()
+        self.update_all_canvases()
         self.cursor_dot_handler=[]
         self.cursors_list=[self.cursor_vert1, self.cursor_horiz1,self.cursor_vert2, self.cursor_horiz2]
         self.cursors_functions=[lambda:  self.changes_cursor_vertical_1(),lambda: self.changes_cursor_horizontal_1(), lambda: self.changes_cursor_vertical_2(),lambda: self.changes_cursor_horizontal_2()]
         self.dots_list=[self.dot1,self.dot2]
         self.dots_function=[lambda: self.changes_dot1(), lambda: self.changes_dot2()]
         for idx, c in enumerate(self.cursors_list):
-            c_handler = Cursor_handler(self.fig,self.axs[0,0],c, self.cursors_functions[idx],parent=self)
+            c_handler = Cursor_handler(self.canvases[0].figure,self.axes[0],c, self.cursors_functions[idx],parent=self)
             self.cursor_dot_handler.append(c_handler)
         for idx, d in enumerate(self.dots_list):
-            d_handler = Dot_handler(self.fig,self.axs[0,0], d, self.dots_function[idx])
+            d_handler = Dot_handler(self.canvases[0].figure,self.axes[0], d, self.dots_function[idx])
             self.cursor_dot_handler.append(d_handler)
-
+    def update_all_canvases(self):
+        for canvas in self.canvases:
+            canvas.draw_idle()         
     def changes_cursor_vertical_1(self):
         x_val= self.cursor_vert1.get_xdata()[0]
         self.dot1.center = (x_val, self.dot1.center[1])
@@ -233,7 +263,7 @@ class Gui_3d(QMainWindow):
         self.cursor_label[0].setText(f"{base}: {x_val:.2f}")
         self.update_mdc()
         self.box()
-        self.fig.canvas.draw_idle() 
+        self.update_all_canvases() 
     def changes_cursor_horizontal_1(self):
         y_val= self.cursor_horiz1.get_ydata()[0]
         self.dot1.center = (self.dot1.center[0],y_val)
@@ -241,7 +271,7 @@ class Gui_3d(QMainWindow):
         self.cursor_label[1].setText(f"{base}: {y_val:.2f}")
         self.update_edc()
         self.box()
-        self.fig.canvas.draw_idle() 
+        self.update_all_canvases() 
     def changes_cursor_vertical_2(self):
         x_val= self.cursor_vert2.get_xdata()[0]
         self.dot2.center = (x_val, self.dot2.center[1])
@@ -249,7 +279,7 @@ class Gui_3d(QMainWindow):
         self.cursor_label[2].setText(f"{base}: {x_val:.2f}")
         self.update_mdc()
         self.box()
-        self.fig.canvas.draw_idle() 
+        self.update_all_canvases() 
     def changes_cursor_horizontal_2(self):
         y_val= self.cursor_horiz2.get_ydata()[0]
         self.dot2.center = (self.dot2.center[0], y_val)
@@ -257,7 +287,7 @@ class Gui_3d(QMainWindow):
         self.cursor_label[3].setText(f"{base}: {y_val:.2f}")
         self.update_edc()
         self.box()
-        self.fig.canvas.draw_idle() 
+        self.update_all_canvases() 
     def changes_dot1(self):
         x_val,y_val= self.dot1.center
         self.cursor_vert1.set_xdata([x_val,x_val])
@@ -269,7 +299,7 @@ class Gui_3d(QMainWindow):
         self.update_edc()
         self.update_mdc()
         self.box()
-        self.fig.canvas.draw_idle() 
+        self.update_all_canvases() 
     def changes_dot2(self):
         x_val,y_val= self.dot2.center
         self.cursor_vert2.set_xdata([x_val,x_val])
@@ -281,10 +311,10 @@ class Gui_3d(QMainWindow):
         self.update_edc()
         self.update_mdc()
         self.box()
-        self.fig.canvas.draw_idle() 
+        self.update_all_canvases() 
    
     def show_pupup_window(self,canvas,ax):
-        if ax==self.axs[0,0]:
+        if ax==self.axes[0]:
             menu = QMenu(canvas)
             action1 = menu.addAction("data_2D")
             action2 = menu.addAction("cursors")
@@ -292,11 +322,11 @@ class Gui_3d(QMainWindow):
             action = menu.exec_(QCursor.pos())
     
             if action == action1:
-                print('data2D_plot=data.sel({data.dims[2]:slice('+f"{self.axis[2][self.slider1.value()]:.2f}"+', '+f"{self.axis[2][self.slider1.value()+self.slider2.value()+1]:.2f}"+')}).sum(dim=data.dims[2])' )
+                print('data2D_plot=data.sel({data.dims[2]:slice('+f"{self.axis[2][self.slider1.value()]:.2f}"+', '+f"{self.axis[2][self.slider1.value()+self.slider2.value()+1]:.2f}"+')}).mean(dim=data.dims[2])' )
             elif action == action2:
                 print('yellow_vertical,yellow_horizontal,green_vertical,green_horizontal= '+ f"{self.dot1.center[0]:.2f} ,{self.dot1.center[1]:.2f},{self.dot2.center[0]:.2f},{self.dot2.center[1]:.2f}")
 
-        elif ax==self.axs[1,0]:
+        elif ax==self.axes[2]:
             menu = QMenu(canvas)
             action1 = menu.addAction("yellow_EDC")
             action2 = menu.addAction("green_EDC")
@@ -308,25 +338,25 @@ class Gui_3d(QMainWindow):
                 print("data.sel({data.dims[2]: slice(" +
               f"{self.axis[2][self.slider1.value()]:.2f}, " +
               f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
-              ")}).sum(dim=data.dims[2]).sel({data.dims[0]: " +
+              ")}).mean(dim=data.dims[2]).sel({data.dims[0]: " +
               f"{self.dot1.center[1]:.2f}" +
               "}, method='nearest')  # Yellow EDC")
             elif action == action2: 
                 print("data.sel({data.dims[2]: slice(" +
               f"{self.axis[2][self.slider1.value()]:.2f}, " +
               f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
-              ")}).sum(dim=data.dims[2]).sel({data.dims[0]: " +
+              ")}).mean(dim=data.dims[2]).sel({data.dims[0]: " +
               f"{self.dot2.center[1]:.2f}" +
               "}, method='nearest')  # Green EDC")
             elif action == action3: 
                 print("data.sel({data.dims[2]: slice(" +
               f"{self.axis[2][self.slider1.value()]:.2f}, " +
               f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
-              ")}).sum(dim=data.dims[2]).sel({data.dims[0]: slice(" +
+              ")}).mean(dim=data.dims[2]).sel({data.dims[0]: slice(" +
               f"{min(self.dot1.center[1], self.dot2.center[1]):.2f}, " +
               f"{max(self.dot1.center[1], self.dot2.center[1]):.2f}" +
-              ")}).sum(dim=data.dims[0])  # Integrated EDC")
-        elif ax==self.axs[0,1]:
+              ")}).mean(dim=data.dims[0])  # Integrated EDC")
+        elif ax==self.axes[1]:
             menu = QMenu(canvas)
             action1 = menu.addAction("yellow_MDC")
             action2 = menu.addAction("green_MDC")
@@ -338,14 +368,14 @@ class Gui_3d(QMainWindow):
                 print("data.sel({data.dims[2]: slice(" +
               f"{self.axis[2][self.slider1.value()]:.2f}, " +
               f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
-              ")}).sum(dim=data.dims[2]).sel({data.dims[1]: " +
+              ")}).mean(dim=data.dims[2]).sel({data.dims[1]: " +
               f"{self.dot1.center[0]:.2f}" +
               "}, method='nearest')  # Yellow MDC")
             elif action == action2: 
                 print("data.sel({data.dims[2]: slice(" +
               f"{self.axis[2][self.slider1.value()]:.2f}, " +
               f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
-              ")}).sum(dim=data.dims[2]).sel({data.dims[1]: " +
+              ")}).mean(dim=data.dims[2]).sel({data.dims[1]: " +
               f"{self.dot2.center[0]:.2f}" +
               "}, method='nearest')  # Green MDC")
 
@@ -353,11 +383,11 @@ class Gui_3d(QMainWindow):
                 print("data.sel({data.dims[2]: slice(" +
               f"{self.axis[2][self.slider1.value()]:.2f}, " +
               f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
-              ")}).sum(dim=data.dims[2]).sel({data.dims[1]: slice(" +
+              ")}).mean(dim=data.dims[2]).sel({data.dims[1]: slice(" +
               f"{min(self.dot1.center[0], self.dot2.center[0]):.2f}, " +
               f"{max(self.dot1.center[0], self.dot2.center[0]):.2f}" +
-              ")}).sum(dim=data.dims[1])  # Integrated MDC")
-        elif ax==self.axs[1,1]:
+              ")}).mean(dim=data.dims[1])  # Integrated MDC")
+        elif ax==self.axes[3]:
             menu = QMenu(canvas)
             action1 = menu.addAction("intensity box")
             action = menu.exec_(QCursor.pos())
@@ -370,7 +400,7 @@ class Gui_3d(QMainWindow):
               "), data.dims[1]: slice(" +
               f"{min(self.dot1.center[0], self.dot2.center[0]):.2f}, " +
               f"{max(self.dot1.center[0], self.dot2.center[0]):.2f}" +
-              ")}].sum(dim=(data.dims[0], data.dims[1]))  # Box integration")
+              ")}].mean(dim=(data.dims[0], data.dims[1]))  # Box integration")
                 
    
                   
@@ -410,34 +440,34 @@ class Gui_3d(QMainWindow):
         # self.slider1_label.setText(str(value))
         base = self.slider1_label.text().split(':')[0]
         self.slider1_label.setText(f"{base}: {self.data[self.data.dims[2]][value].item():.2f}")
-        self.data2D_plot=self.data.sel({self.data.dims[2]:slice(self.axis[2][self.slider1.value()], self.axis[2][self.slider1.value() + self.slider2.value()])}).sum(dim=self.data.dims[2])
+        self.data2D_plot=self.data.sel({self.data.dims[2]:slice(self.axis[2][self.slider1.value()], self.axis[2][self.slider1.value() + self.slider2.value()])}).mean(dim=self.data.dims[2])
         self.update_show()
         self.t=self.slider1.value()
     def slider2_changed(self,value): # change the slider controlling the third dimension for windowing
         # self.slider2_label.setText(str(value))
         base = self.slider2_label.text().split(':')[0]
         self.slider2_label.setText(f"{base}: {value}")
-        self.data2D_plot=self.data.sel({self.data.dims[2]:slice(self.axis[2][self.slider1.value()], self.axis[2][self.slider1.value() + self.slider2.value()])}).sum(dim=self.data.dims[2])
+        self.data2D_plot=self.data.sel({self.data.dims[2]:slice(self.axis[2][self.slider1.value()], self.axis[2][self.slider1.value() + self.slider2.value()])}).mean(dim=self.data.dims[2])
         self.update_show()
         self.dt=self.slider2.value()
     def checkbox_e_changed(self, state): # Checkbox for integrating the EDC between the cursors
         self.update_edc()
-        self.fig.canvas.draw_idle()
+        self.update_all_canvases()
     def checkbox_k_changed(self, state): # Checkbox for integrating the MDC between the cursors
         self.update_mdc()
-        self.fig.canvas.draw_idle()
+        self.update_all_canvases()
 
     def fit_energy_panel(self,event): # open up the fit panel for the EDC 
         x_min = min(self.dot2.center[1], self.dot1.center[1])
         x_max = max(self.dot2.center[1], self.dot1.center[1])
-        data_fit=self.data.sel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0])
+        data_fit=self.data.sel({self.data.dims[0]:slice(x_min, x_max)}).mean(dim=self.data.dims[0])
         graph_window=fit_panel(data_fit, self.t, self.dt, self.data.dims[1])
         graph_window.show()
         self.graph_windows.append(graph_window)
     def fit_momentum_panel(self,event): # open up the fit panel for the MDC
         x_min = min(self.dot1.center[0], self.dot2.center[0])
         x_max = max(self.dot1.center[0], self.dot2.center[0])
-        data_fit=self.data.sel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1])
+        data_fit=self.data.sel({self.data.dims[1]:slice(x_min, x_max)}).mean(dim=self.data.dims[1])
         graph_window=fit_panel(data_fit, self.t, self.dt, self.data.dims[0])
         graph_window.show()
         self.graph_windows.append(graph_window)
@@ -446,46 +476,44 @@ class Gui_3d(QMainWindow):
         graph_window.show()
         self.graph_windows.append(graph_window)
     def update_edc(self):
-        self.axs[1, 0].clear()
+        self.axes[2].clear()
         if self.checkbox_e.isChecked():
             self.integrate_E()
         else:
             self.edc_yellow=self.data2D_plot.sel({self.data.dims[0]:self.dot1.center[1]}, method='nearest')
             self.edc_green=self.data2D_plot.sel({self.data.dims[0]:self.dot2.center[1]}, method='nearest')
-            self.edc_yellow.plot(ax=self.axs[1,0],color='orange')
-            self.edc_green.plot(ax=self.axs[1,0],color='green')
+            self.edc_yellow.plot(ax=self.axes[2],color='orange')
+            self.edc_green.plot(ax=self.axes[2],color='green')
     def update_mdc(self):
-        self.axs[0, 1].clear()
+        self.axes[1].clear()
         if self.checkbox_k.isChecked():
             self.integrate_k()
         else:
-            self.data2D_plot.sel({self.data.dims[1]:self.dot1.center[0]}, method='nearest').plot(ax=self.axs[0,1],color='orange')
-            self.data2D_plot.sel({self.data.dims[1]:self.dot2.center[0]}, method='nearest').plot(ax=self.axs[0,1],color='green')
+            self.data2D_plot.sel({self.data.dims[1]:self.dot1.center[0]}, method='nearest').plot(ax=self.axes[1],color='orange')
+            self.data2D_plot.sel({self.data.dims[1]:self.dot2.center[0]}, method='nearest').plot(ax=self.axes[1],color='green')
     
     def integrate_E(self): # integrate EDC between the two cursors in the main graph
-        self.axs[1, 0].clear()
+        self.axes[2].clear()
 
         x_min = min(self.dot2.center[1], self.dot1.center[1])
         x_max = max(self.dot2.center[1], self.dot1.center[1])
         
-        # self.data2D_plot.isel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0]).plot(ax=self.axs[1,0])
-        self.integrated_edc=self.data2D_plot.sel({self.data.dims[0]:slice(x_min, x_max)}).sum(dim=self.data.dims[0])
-        self.integrated_edc.plot(ax=self.axs[1,0])
-        # self.fig.canvas.draw_idle()
+        # self.data2D_plot.isel({self.data.dims[0]:slice(x_min, x_max)}).mean(dim=self.data.dims[0]).plot(ax=self.axes[2])
+        self.integrated_edc=self.data2D_plot.sel({self.data.dims[0]:slice(x_min, x_max)}).mean(dim=self.data.dims[0])
+        self.integrated_edc.plot(ax=self.axes[2])
 
     def integrate_k(self): # integrate MDC between the two cursors in the main graph
-        self.axs[0, 1].clear()
+        self.axes[1].clear()
 
         x_min = min(self.dot1.center[0], self.dot2.center[0])
         x_max = max(self.dot1.center[0], self.dot2.center[0])
 
-        # self.data2D_plot.isel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1]).plot(ax=self.axs[0,1])
-        self.integrated_mdc=self.data2D_plot.sel({self.data.dims[1]:slice(x_min, x_max)}).sum(dim=self.data.dims[1])
-        self.integrated_mdc.plot(ax=self.axs[0,1])
-        # self.fig.canvas.draw_idle()
+        # self.data2D_plot.isel({self.data.dims[1]:slice(x_min, x_max)}).mean(dim=self.data.dims[1]).plot(ax=self.axes[1])
+        self.integrated_mdc=self.data2D_plot.sel({self.data.dims[1]:slice(x_min, x_max)}).mean(dim=self.data.dims[1])
+        self.integrated_mdc.plot(ax=self.axes[1])
 
     def box(self): # generate the intensity graph between the four cursors in the main graph
-        self.axs[1, 1].clear()
+        self.axes[3].clear()
         
         x0,y0=self.dot1.center
         x1,y1=self.dot2.center
@@ -494,12 +522,12 @@ class Gui_3d(QMainWindow):
         x0, x1 = sorted([x0, x1])
         y0, y1 = sorted([y0, y1])
 
-        self.int = self.data.loc[{self.data.dims[0]: slice(y0, y1), self.data.dims[1]: slice(x0, x1)}].sum(dim=(self.data.dims[0], self.data.dims[1]))
+        self.int = self.data.loc[{self.data.dims[0]: slice(y0, y1), self.data.dims[1]: slice(x0, x1)}].mean(dim=(self.data.dims[0], self.data.dims[1]))
         if x0 != x1 and y0 != y1:
             
-            self.int.plot(ax=self.axs[1,1])
-            self.dot, = self.axs[1, 1].plot([self.axis[2][self.slider1.value()]], [self.int[self.slider1.value()]], 'ro', markersize=8)
-            self.fig.canvas.draw_idle()
+            self.int.plot(ax=self.axes[3])
+            self.dot, = self.axes[3].plot([self.axis[2][self.slider1.value()]], [self.int[self.slider1.value()]], 'ro', markersize=8)
+            self.update_all_canvases()
 
     def update_show(self): # update the main graph as well as the relevant EDC and MDC cuts. Also the box intensity
         self.update_edc()
@@ -508,8 +536,8 @@ class Gui_3d(QMainWindow):
         self.box() # update the intensity box graph
         time1 = self.axis[2][self.slider1.value()]
         timedt1 = self.axis[2][self.slider1.value() + self.slider2.value()]
-        self.axs[0, 0].set_title(f't: {time1:.2f}, t+dt: {timedt1:.2f}')
-        self.fig.canvas.draw_idle()
+        self.axes[0].set_title(f't: {time1:.2f}, t+dt: {timedt1:.2f}')
+        self.update_all_canvases()
 
 
    
