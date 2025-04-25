@@ -36,17 +36,9 @@ class Gui_3d(QMainWindow):
         
         layout = QVBoxLayout()
         central_widget.setLayout(layout)
-        
-        
-        # self.fig, self.axs = plt.subplots(2,2,figsize=(20,16))
-        # plt.close(self.fig)
-        # self.canvas = FigureCanvas(self.fig)
-        
-        
+
         self.click_handlers = []
         self.handler_list = []
-            
-        
         # plt.ioff()
         # add the checkboxes for EDC and MDC integration and the button to save the results
         self.checkbox_e = QCheckBox("Integrate_energy")

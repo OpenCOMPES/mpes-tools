@@ -322,7 +322,6 @@ data.loc[
         kx1=self.data_array[self.axes[0]][self.slider1[2].value()].item()
         kx2=self.data_array[self.axes[0]][self.slider1[2].value()+self.slider2[2].value()+1].item()
         data_kyedt = self.data_array.loc[{self.axes[0]:slice(kx1,kx2)}].mean(dim=(self.axes[0]))
-        print(type(data_kyedt))
         graph_window = Gui_3d(data_kyedt, self.slider3[2].value(), self.slider4[2].value(),'METIS')
         # Show the graph window
         
@@ -332,7 +331,6 @@ data.loc[
     def load_data(self, data_array: xr.DataArray):
         self.data_array = data_array
         self.axes = data_array.dims
-        # print('theaxissss',self.axes)
         self.slider1[0].setRange(0,len(self.data_array.coords[self.axes[2]])-1)
         self.slider1[1].setRange(0,len(self.data_array.coords[self.axes[0]])-1)
         self.slider1[2].setRange(0,len(self.data_array.coords[self.axes[1]])-1)
@@ -517,7 +515,6 @@ data.loc[
             self.graphs[2].canvas.draw_idle()
             self.graphs[1].canvas.draw_idle()
             self.graphs[3].canvas.draw_idle()
-            print(id(self.energy_time_cursor))
             self.update_energy(self.slider1[0].value(),self.slider2[0].value(),self.slider3[0].value(), self.slider4[0].value())
             
         elif index in range(4,8):

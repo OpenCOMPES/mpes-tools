@@ -25,7 +25,6 @@ class colorscale_slider(QWidget):
             self.case=True
         else:
             self.cmin, self.cmax=self.vmin,self.vmax
-        print(self.vmin,self.vmax)
         # Slider Widget
         slider_widget = QWidget()
         slider_layout = QVBoxLayout(slider_widget)
@@ -37,14 +36,10 @@ class colorscale_slider(QWidget):
         self.slider.setValue([float(self.vmin),float(self.vmax)])
         if self.case :
             self.slider.setValue([self.new_values(self.vmin), self.new_values(self.vmax)])
-        # self.slider.valueChanged.connect(self.update_clim)
         self.slider.valueChanged.connect(lambda value: self.update_clim(value))
         
         self.vmin_label = QLabel(f"{self.vmin:.2e}")
         self.vmax_label = QLabel(f"{self.vmax:.2e}")
-        # # self.label = QLabel(f"{self.vmin:.2f} to {self.vmax:.2f}")
-        # self.label = QLabel(f"{self.vmin:.2e} to {self.vmax:.2e}")
-        # self.label = QLabel(' ')
         slider_layout.addWidget(self.vmax_label)
         slider_layout.addWidget(self.slider)
         slider_layout.addWidget(self.vmin_label)
