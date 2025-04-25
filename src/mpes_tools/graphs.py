@@ -100,7 +100,12 @@ class showgraphs(QMainWindow):
             self.ax_list.append(ax)
             self.cursor=ax.axvline(x=self.x[0], color='r', linestyle='--')
             self.cursor_list.append(self.cursor)
-        self.update_parameter(0)
+        # self.update_parameter(0)
+        self.axis.plot(self.list_axis[0][0],self.list_plot_fits[0][0][0],'o', label='data')
+        self.axis.plot(self.list_axis[1][0],self.list_plot_fits[0][1][0],'r--', label='fit')
+        self.axis.legend()
+        self.figure.tight_layout()
+        self.canvas.draw()
         self.slider.valueChanged.connect(self.update_parameter)
         
     def show_pupup_window(self,canvas,ax):
@@ -204,10 +209,14 @@ data_array = xr.DataArray(
             self.ax_list[i].figure.canvas.draw_idle()
         base = self.slider_label.text().split(':')[0]
         self.slider_label.setText(f"{base}: {self.x[value]:.2f}")
+        yscale = self.axis.get_yscale()
+        ylim = self.axis.get_ylim()
         self.axis.clear()
         
         self.axis.plot(self.list_axis[0][0],self.list_plot_fits[value][0][0],'o', label='data')
         self.axis.plot(self.list_axis[1][0],self.list_plot_fits[value][1][0],'r--', label='fit')
+        self.axis.set_yscale(yscale)
+        self.axis.set_ylim(ylim)
         self.axis.legend()
         self.figure.tight_layout()
         self.canvas.draw()
