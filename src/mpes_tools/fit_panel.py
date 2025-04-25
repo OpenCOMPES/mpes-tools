@@ -824,11 +824,10 @@ class fit_panel(QMainWindow):
                 self.fit_results.append(getattr(self, pname))
                 self.fit_results_err.append(getattr(self, f"{pname}_err"))
                 names.append(pname)
-        # print('th dt',self.dt)    
-        # print('the xaxis',len(self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-self.dt]))
         sg=showgraphs(self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-self.dt], self.fit_results,self.fit_results_err,names,list_axis,list_plot_fits)
         sg.show()
         self.graph_windows.append(sg)
+        self.cursor_handler.redraw()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

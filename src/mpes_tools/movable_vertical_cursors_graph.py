@@ -39,8 +39,6 @@ class MovableCursors:
             elif self.active_cursor == self.Line2:
                 self.Line2.set_xdata([event.xdata, event.xdata])
                 self.cursorlinev2= event.xdata
-            # print(dot1.center) 
-            # print(self.cursorlinev1,self.cursorlinev2)
             self.ax.figure.canvas.draw()
             plt.draw()
             def find_nearest_index(array, value):
@@ -58,14 +56,11 @@ class MovableCursors:
         self.cursorlinev2= self.Line2.get_xdata()[0]
         self.Line1.remove()
         self.Line2.remove()
-        # plt.draw()
         self.ax.figure.canvas.draw()
-        
     def redraw(self):
         # print(self.cursorlinev1,self.cursorlinev2)
         self.Line1=self.ax.axvline(x=self.cursorlinev1, color='red', linestyle='--',linewidth=2, label='Vertical Line',picker=10)
         self.Line2=self.ax.axvline(x=self.cursorlinev2, color='red', linestyle='--',linewidth=2, label='Vertical Line',picker=10)
-        # plt.draw()
         self.ax.figure.canvas.draw()
     def cursors(self):
         return [self.v1_pixel,self.v2_pixel]        
