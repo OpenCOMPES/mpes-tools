@@ -368,9 +368,21 @@ data.loc[
         self.slider_labels[15].setText("Δ"+self.axes[0])
         
         
-        # data_avg=self.data_array.loc[{self.axes[2]:slice(self.data_array[self.axes[2]][self.slider1[0].value()].item(),self.data_array[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item()),
-        #                               self.axes[3]:slice(self.data_array[self.axes[3]][self.slider3[0].value()].item(),self.data_array[self.axes[3]][self.slider3[0].value()+self.slider4[0].value()].item())}].mean(dim=(self.axes[2], self.axes[3]))
         
+        self.initialize_plots()
+        self.initialize_cursors()
+        
+        self.update_energy(self.slider1[0].value(),self.slider2[0].value(),self.slider3[0].value(), self.slider4[0].value())
+        
+        self.update_ky(self.slider1[1].value(), self.slider2[1].value(),self.slider3[1].value(), self.slider4[1].value())
+    
+        self.update_kx(self.slider1[2].value(), self.slider2[2].value(),self.slider3[2].value(), self.slider4[2].value())
+        
+        self.update_dt(self.slider1[3].value(), self.slider2[3].value(), self.slider3[3].value(), self.slider4[3].value())
+        
+        
+        
+    def initialize_plots(self): 
         data_avg=self.data_array.isel({self.axes[2]:slice(0,0), self.axes[3]:slice(0,0)}).mean(dim=(self.axes[2], self.axes[3]))
         self.im0=data_avg.T.plot(ax=self.graphs[0].gca(),cmap='terrain', add_colorbar=False)
         
@@ -383,17 +395,10 @@ data.loc[
         data_avg=self.data_array.isel({self.axes[1]:slice(0,0), self.axes[0]:slice(0,0)}).mean(dim=(self.axes[1], self.axes[0]))
         self.im3=data_avg.plot(ax=self.graphs[3].gca(),cmap='terrain', add_colorbar=False)
         
-        self.update_energy(self.slider1[0].value(),self.slider2[0].value(),self.slider3[0].value(), self.slider4[0].value())
-        
-        self.update_ky(self.slider1[1].value(), self.slider2[1].value(),self.slider3[1].value(), self.slider4[1].value())
-    
-        self.update_kx(self.slider1[2].value(), self.slider2[2].value(),self.slider3[2].value(), self.slider4[2].value())
-        
-        self.update_dt(self.slider1[3].value(), self.slider2[3].value(), self.slider3[3].value(), self.slider4[3].value())
-        
         self.graphs[0].gca().figure.colorbar(self.im0, ax=self.graphs[0].gca())
-    
-        print('the limits=',[self.data_array.min(),self.data_array.max()])
+        self.graphs[1].gca().figure.colorbar(self.im1, ax=self.graphs[1].gca())
+        self.graphs[2].gca().figure.colorbar(self.im2, ax=self.graphs[2].gca())
+        self.graphs[3].gca().figure.colorbar(self.im3, ax=self.graphs[3].gca())
         
         self.im0.set_clim([self.data_array.min(),self.data_array.max()])
         self.im1.set_clim([self.data_array.min(),self.data_array.max()])
@@ -404,6 +409,34 @@ data.loc[
         colorscale_slider(self.graph_layout_list[1], self.im1, self.canvases[1], [self.data_array.min(),self.data_array.max()])
         colorscale_slider(self.graph_layout_list[2], self.im2, self.canvases[2], [self.data_array.min(),self.data_array.max()])
         colorscale_slider(self.graph_layout_list[3], self.im3, self.canvases[3], [self.data_array.min(),self.data_array.max()])
+        
+    def initialize_cursors(self):
+        
+        ax=self.graphs[0].gca()
+        self.energy_kx_cursor = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
+        self.energy_ky_cursor = ax.axhline(y=self.data_array.coords[self.axes[1]][self.slider1[1].value()].item(), color='r', linestyle='--')
+        self.energy_kxky_x = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
+        self.energy_kxky_y = ax.axhline(y=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
+        self.energy_delta_kx_cursor = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()+self.slider2[2].value()].item(), color='r', linestyle='--')
+        self.energy_delta_ky_cursor = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider1[1].value()+self.slider2[1].value()].item(), color='r', linestyle='--')
+        self.energy_delta_kxky_y = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[1]][self.slider1[3].value()+self.slider2[3].value()].item(), color='b', linestyle='--')
+        self.energy_delta_kxky_x = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[0]][self.slider3[3].value()+self.slider4[3].value()].item(), color='b', linestyle='--')
+        ax=self.graphs[1].gca()
+        self.ky_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+        self.ky_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
+        ax=self.graphs[2].gca()
+        self.kx_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+        self.kx_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
+        ax=self.graphs[3].gca()
+        self.kx_ky_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+        self.kx_ky_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
+        self.energy_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[0].value()].item(), color='r', linestyle='--')
+        self.delta_energy_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[0].value()+self.slider4[0].value()].item(), color='r', linestyle='--')
+        self.ky_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[1].value()].item(), color='b', linestyle='--')
+        self.delta_ky_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[1].value()+self.slider4[1].value()].item(), color='b', linestyle='--')
+        self.kx_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[2].value()].item(), color='g', linestyle='--')
+        self.delta_kx_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[2].value()+self.slider4[2].value()].item(), color='g', linestyle='--')
+        
     def update_energy(self,Energy,dE,te,dte):
         E1=self.data_array[self.axes[2]][Energy].item()
         E2=self.data_array[self.axes[2]][Energy+dE].item()
@@ -413,18 +446,8 @@ data.loc[
         
         data_avg=self.data_array.loc[{self.axes[2]:slice(E1,E2), self.axes[3]:slice(te1,te2)}].mean(dim=(self.axes[2], self.axes[3]))
         self.im0.set_array(data_avg.T.values) 
-        # vmin, vmax = np.min(data_avg), np.max(data_avg)
-        # self.im0.set_clim(vmin, vmax)  # Update the limits of the colormap
         ax.set_aspect('auto')
         ax.set_title(f'energy: {E1:.2f}, E+dE: {E2:.2f} , t: {te1:.2f}, t+dt: {te2:.2f}')
-        self.energy_kx_cursor = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
-        self.energy_ky_cursor = ax.axhline(y=self.data_array.coords[self.axes[1]][self.slider1[1].value()].item(), color='r', linestyle='--')
-        self.energy_kxky_x = ax.axvline(x=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
-        self.energy_kxky_y = ax.axhline(y=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
-        self.energy_delta_kx_cursor = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()+self.slider2[2].value()].item(), color='r', linestyle='--')
-        self.energy_delta_ky_cursor = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider1[1].value()+self.slider2[1].value()].item(), color='r', linestyle='--')
-        self.energy_delta_kxky_y = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[1]][self.slider1[3].value()+self.slider2[3].value()].item(), color='b', linestyle='--')
-        self.energy_delta_kxky_x = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[0]][self.slider3[3].value()+self.slider4[3].value()].item(), color='b', linestyle='--')
         self.graphs[0].tight_layout()
         self.graphs[0].canvas.draw_idle()
         
@@ -440,8 +463,6 @@ data.loc[
         self.im1.set_array(data_avg.T.values) 
         ax.set_aspect('auto')
         ax.set_title(f'ky: {y1:.2f}, ky+dky: {y2:.2f} , t: {ty1:.2f}, t+dt: {ty2:.2f}')
-        self.ky_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
-        self.ky_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
         self.graphs[1].tight_layout()
         self.graphs[1].canvas.draw_idle()
         
@@ -457,8 +478,6 @@ data.loc[
         self.im2.set_array(data_avg.T.values) 
         ax.set_aspect('auto')
         ax.set_title(f'kx: {x1:.2f}, kx+dkx: {x2:.2f} , t: {tx1:.2f}, t+dt: {tx2:.2f}')
-        self.kx_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
-        self.kx_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
         self.graphs[2].tight_layout()
         self.graphs[2].canvas.draw_idle()
     
@@ -475,14 +494,6 @@ data.loc[
         self.im3.set_array(data_avg.values) 
         ax.set_aspect('auto')
         ax.set_title(f'ky: {yt1:.2f}, ky+dky: {yt2:.2f} , kx: {xt1:.2f}, kx+dkx: {xt2:.2f}')
-        self.kx_ky_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
-        self.kx_ky_delta_energy_cursor = ax.axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
-        self.energy_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[0].value()].item(), color='r', linestyle='--')
-        self.delta_energy_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[0].value()+self.slider4[0].value()].item(), color='r', linestyle='--')
-        self.ky_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[1].value()].item(), color='b', linestyle='--')
-        self.delta_ky_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[1].value()+self.slider4[1].value()].item(), color='b', linestyle='--')
-        self.kx_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[2].value()].item(), color='g', linestyle='--')
-        self.delta_kx_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[2].value()+self.slider4[2].value()].item(), color='g', linestyle='--')
         self.graphs[3].tight_layout()
         self.graphs[3].canvas.draw_idle()
         
@@ -496,84 +507,50 @@ data.loc[
         self.slider_labels[index].setText(f"{base}: {value}")
 
         if index in range(0,4):
-            # ax = self.graphs[2].gca()
-            if self.kx_energy_cursor in self.graphs[2].gca().lines:
-                self.kx_energy_cursor.remove()
-            if self.ky_energy_cursor in self.graphs[1].gca().lines:
-                self.ky_energy_cursor.remove()
-            if self.kx_ky_energy_cursor in self.graphs[3].gca().lines:
-                self.kx_ky_energy_cursor.remove()
-            if self.kx_delta_energy_cursor in self.graphs[2].gca().lines:
-                self.kx_delta_energy_cursor.remove()
-            if self.ky_delta_energy_cursor in self.graphs[1].gca().lines:
-                self.ky_delta_energy_cursor.remove()
-            if self.kx_ky_delta_energy_cursor in self.graphs[3].gca().lines:
-                self.kx_ky_delta_energy_cursor.remove()
-            if self.energy_time_cursor in self.graphs[3].gca().lines:
-                self.energy_time_cursor.remove()
-            if self.delta_energy_time_cursor in self.graphs[3].gca().lines:
-                self.delta_energy_time_cursor.remove()
-            self.kx_energy_cursor = self.graphs[2].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
-            self.ky_energy_cursor = self.graphs[1].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
-            self.kx_ky_energy_cursor = self.graphs[3].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(), color='r', linestyle='--')
+            self.kx_energy_cursor.set_ydata([self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(),self.data_array.coords[self.axes[2]][self.slider1[0].value()].item()])
+            self.ky_energy_cursor.set_ydata([self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(),self.data_array.coords[self.axes[2]][self.slider1[0].value()].item()])
+            self.kx_ky_energy_cursor.set_ydata([self.data_array.coords[self.axes[2]][self.slider1[0].value()].item(),self.data_array.coords[self.axes[2]][self.slider1[0].value()].item()])
             
-            self.kx_delta_energy_cursor = self.graphs[2].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
-            self.ky_delta_energy_cursor = self.graphs[1].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
-            self.kx_ky_delta_energy_cursor = self.graphs[3].gca().axhline(y=self.data_array.coords[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()].item(), color='r', linestyle='--')
-            self.energy_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[0].value()].item(), color='r', linestyle='--')
-            self.delta_energy_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[0].value()+self.slider4[0].value()].item(), color='r', linestyle='--')
+            self.kx_delta_energy_cursor.set_ydata([self.data_array.coords[self.axes[2]][self.slider1[0].value() + self.slider2[0].value()].item(),self.data_array.coords[self.axes[2]][self.slider1[0].value() + self.slider2[0].value()].item()])
+            self.ky_delta_energy_cursor.set_ydata([self.data_array.coords[self.axes[2]][self.slider1[0].value() + self.slider2[0].value()].item(),self.data_array.coords[self.axes[2]][self.slider1[0].value() + self.slider2[0].value()].item()])
+            self.kx_ky_delta_energy_cursor.set_ydata([self.data_array.coords[self.axes[2]][self.slider1[0].value() + self.slider2[0].value()].item(),self.data_array.coords[self.axes[2]][self.slider1[0].value() + self.slider2[0].value()].item()])
+            
+            self.energy_time_cursor.set_xdata([self.data_array.coords[self.axes[3]][self.slider3[0].value()].item(),self.data_array.coords[self.axes[3]][self.slider3[0].value()].item()])
+            self.delta_energy_time_cursor.set_xdata([self.data_array.coords[self.axes[3]][self.slider3[0].value() + self.slider4[0].value()].item(),self.data_array.coords[self.axes[3]][self.slider3[0].value() + self.slider4[0].value()].item()])
+
+            
             self.graphs[2].canvas.draw_idle()
             self.graphs[1].canvas.draw_idle()
             self.graphs[3].canvas.draw_idle()
+            print(id(self.energy_time_cursor))
             self.update_energy(self.slider1[0].value(),self.slider2[0].value(),self.slider3[0].value(), self.slider4[0].value())
             
         elif index in range(4,8):
-            if self.energy_ky_cursor is not None:
-                self.energy_ky_cursor.remove()
-            if self.energy_delta_ky_cursor is not None:
-                self.energy_delta_ky_cursor.remove()
-            if self.ky_time_cursor in self.graphs[3].gca().lines:
-                self.ky_time_cursor.remove()
-            if self.delta_ky_time_cursor in self.graphs[3].gca().lines:
-                self.delta_ky_time_cursor.remove()
-           
-            self.energy_ky_cursor = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider1[1].value()].item(), color='r', linestyle='--')
-            self.energy_delta_ky_cursor = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[0]][self.slider1[1].value()+self.slider2[1].value()].item(), color='r', linestyle='--')
-            self.ky_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[1].value()].item(), color='b', linestyle='--')
-            self.delta_ky_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[1].value()+self.slider4[1].value()].item(), color='b', linestyle='--')
+
+            self.energy_ky_cursor.set_ydata([self.data_array.coords[self.axes[0]][self.slider1[1].value()].item(),self.data_array.coords[self.axes[0]][self.slider1[1].value()].item()])
+            self.energy_delta_ky_cursor.set_ydata([self.data_array.coords[self.axes[0]][self.slider1[1].value() + self.slider2[1].value()].item(),self.data_array.coords[self.axes[0]][self.slider1[1].value() + self.slider2[1].value()].item()])
+            self.ky_time_cursor.set_xdata([self.data_array.coords[self.axes[3]][self.slider3[1].value()].item(),self.data_array.coords[self.axes[3]][self.slider3[1].value()].item()])
+            self.delta_ky_time_cursor.set_xdata([self.data_array.coords[self.axes[3]][self.slider3[1].value() + self.slider4[1].value()].item(),self.data_array.coords[self.axes[3]][self.slider3[1].value() + self.slider4[1].value()].item()])
+
+            
             self.graphs[0].canvas.draw_idle()
             self.graphs[3].canvas.draw_idle()
             self.update_ky(self.slider1[1].value(), self.slider2[1].value(),self.slider3[1].value(), self.slider4[1].value())
         elif index in range (8,12):
-            ax = self.graphs[0].gca()
-            if self.energy_kx_cursor in ax.lines:
-                self.energy_kx_cursor.remove()
-            if self.energy_delta_kx_cursor in ax.lines:
-                self.energy_delta_kx_cursor.remove()
-            if self.kx_time_cursor in self.graphs[3].gca().lines:
-                self.kx_time_cursor.remove()
-            if self.delta_kx_time_cursor in self.graphs[3].gca().lines:
-                self.delta_kx_time_cursor.remove()
-            self.energy_kx_cursor = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(), color='r', linestyle='--')
-            self.energy_delta_kx_cursor = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[1]][self.slider1[2].value()+self.slider2[2].value()].item(), color='r', linestyle='--')
-            self.kx_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[2].value()].item(), color='g', linestyle='--')
-            self.delta_kx_time_cursor = self.graphs[3].gca().axvline(x=self.data_array.coords[self.axes[3]][self.slider3[2].value()+self.slider4[2].value()].item(), color='g', linestyle='--')
+            self.energy_kx_cursor.set_xdata([self.data_array.coords[self.axes[1]][self.slider1[2].value()].item(),self.data_array.coords[self.axes[1]][self.slider1[2].value()].item()])
+            self.energy_delta_kx_cursor.set_xdata([self.data_array.coords[self.axes[1]][self.slider1[2].value() + self.slider2[2].value()].item(),self.data_array.coords[self.axes[1]][self.slider1[2].value() + self.slider2[2].value()].item()])
+            self.kx_time_cursor.set_xdata([self.data_array.coords[self.axes[3]][self.slider3[2].value()].item(),self.data_array.coords[self.axes[3]][self.slider3[2].value()].item()])
+            self.delta_kx_time_cursor.set_xdata([self.data_array.coords[self.axes[3]][self.slider3[2].value() + self.slider4[2].value()].item(),self.data_array.coords[self.axes[3]][self.slider3[2].value() + self.slider4[2].value()].item()])
+
             self.graphs[3].canvas.draw_idle()
             self.graphs[0].canvas.draw_idle()
             self.update_kx(self.slider1[2].value(), self.slider2[2].value(),self.slider3[2].value(), self.slider4[2].value())
         elif index in range (12,16):
-            if self.energy_kxky_x in self.graphs[0].gca().lines:
-                self.energy_kxky_x.remove()
-            if self.energy_kxky_y in self.graphs[0].gca().lines:
-                self.energy_kxky_y.remove()
-            if self.energy_delta_kxky_x in self.graphs[0].gca().lines:
-                self.energy_delta_kxky_x.remove()
-            if self.energy_delta_kxky_y in self.graphs[0].gca().lines:
-                self.energy_delta_kxky_y.remove()
-            self.energy_kxky_y = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(), color='b', linestyle='--')
-            self.energy_kxky_x = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(), color='b', linestyle='--')
-            self.energy_delta_kxky_y = self.graphs[0].gca().axhline(y=self.data_array.coords[self.axes[1]][self.slider1[3].value()+self.slider2[3].value()].item(), color='b', linestyle='--')
-            self.energy_delta_kxky_x = self.graphs[0].gca().axvline(x=self.data_array.coords[self.axes[0]][self.slider3[3].value()+self.slider4[3].value()].item(), color='b', linestyle='--')
+
+            self.energy_kxky_y.set_ydata([self.data_array.coords[self.axes[1]][self.slider1[3].value()].item(),self.data_array.coords[self.axes[1]][self.slider1[3].value()].item()])
+            self.energy_kxky_x.set_xdata([self.data_array.coords[self.axes[0]][self.slider3[3].value()].item(),self.data_array.coords[self.axes[0]][self.slider3[3].value()].item()])
+            self.energy_delta_kxky_y.set_ydata([self.data_array.coords[self.axes[1]][self.slider1[3].value() + self.slider2[3].value()].item(),self.data_array.coords[self.axes[1]][self.slider1[3].value() + self.slider2[3].value()].item()])
+            self.energy_delta_kxky_x.set_xdata([self.data_array.coords[self.axes[0]][self.slider3[3].value() + self.slider4[3].value()].item(),self.data_array.coords[self.axes[0]][self.slider3[3].value() + self.slider4[3].value()].item()])
             self.graphs[0].canvas.draw_idle()
             self.update_dt(self.slider1[3].value(), self.slider2[3].value(), self.slider3[3].value(), self.slider4[3].value())
 
