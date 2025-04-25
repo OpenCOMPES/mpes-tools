@@ -16,7 +16,6 @@ import xarray as xr
 from mpes_tools.right_click_handler import RightClickHandler
 from PyQt5.QtWidgets import QMenu,QGridLayout,QHBoxLayout, QSizePolicy,QLabel
 from PyQt5.QtGui import QCursor
-from mpes_tools.cursor_dot_handler import Cursor_dot_handler
 from mpes_tools.cursor_handler import Cursor_handler
 from mpes_tools.dot_handler import Dot_handler
 from mpes_tools.colorscale_slider_handler import colorscale_slider
