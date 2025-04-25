@@ -30,7 +30,6 @@ class colorscale_slider(QWidget):
         self.slider.setFixedWidth(15)
         self.slider.setMinimum(int(1 * self.cmin))
         self.slider.setMaximum(int(1* self.cmax))
-        print('new_values',[self.new_values(self.vmin), self.new_values(self.vmax)])
         self.slider.setValue([self.new_values(self.vmin), self.new_values(self.vmax)])
         # self.slider.valueChanged.connect(self.update_clim)
         self.slider.valueChanged.connect(lambda value: self.update_clim(value))
@@ -61,7 +60,6 @@ class colorscale_slider(QWidget):
 
     def update_clim(self, value):
         vmin, vmax = self.inverse(value[0]), self.inverse(value[1])
-        print('theinverse,',value)
         self.im.set_clim(vmin, vmax)
         self.label.setText(f" {vmin:.2f} to {vmax:.2f}")
         if self.colorbar:
