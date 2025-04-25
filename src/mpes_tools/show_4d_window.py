@@ -60,15 +60,10 @@ class show_4d_window(QMainWindow):
                 canvas.mpl_connect("button_press_event", handler.on_right_click)
                 self.handler_list.append(handler)
                 
-                # self.color_graph=QHBoxLayout()
-                # self.color_graph.addWidget(canvas)
-                
                 self.graph_layout.addWidget(canvas)
-                # self.graph_layout.addWidget(self.color_graph)
                 self.axis_list.append(axis)
                 self.canvases.append(canvas)
                 
-                # self.color_graph_list.append(self.color_graph)
                 
                 
                 slider_layout= QHBoxLayout()
