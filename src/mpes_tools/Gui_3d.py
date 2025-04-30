@@ -19,6 +19,7 @@ from PyQt5.QtGui import QCursor
 from mpes_tools.cursor_handler import Cursor_handler
 from mpes_tools.dot_handler import Dot_handler
 from mpes_tools.colorscale_slider_handler import colorscale_slider
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT
 from matplotlib.figure import Figure
 #graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
 # Two vertical cursors and two horizontal cursors are defined in the main graph with each same color for the cursors being horizontal and vertical intercept each other in a dot so one can move either each cursor or the dot itself which will move both cursors. 
@@ -68,21 +69,27 @@ class Gui_3d(QMainWindow):
         
         self.canvases = []
         self.axes = []
-        
+        self.toolbar_canvas_list=[]
         for i in range(4):
             fig = Figure(figsize=(10, 8))  # optional: smaller size per plot
             plt.close(fig)
             canvas = FigureCanvas(fig)
             ax = fig.add_subplot(111)
+            toolbar=NavigationToolbar2QT(canvas, self)
             self.canvases.append(canvas)
             self.axes.append(ax)
+            layout_tool_canvas = QVBoxLayout(self)
+            layout_tool_canvas.addWidget(toolbar)  # Add the toolbar first
+            layout_tool_canvas.addWidget(canvas)
+            self.toolbar_canvas_list.append(layout_tool_canvas)
             
         canvas_layout = QGridLayout()
 
-        canvas_layout.addWidget(self.canvases[0], 0, 0)
-        canvas_layout.addWidget(self.canvases[1], 0, 1)
-        canvas_layout.addWidget(self.canvases[2], 1, 0)
-        canvas_layout.addWidget(self.canvases[3], 1, 1)
+        canvas_layout.addLayout(self.toolbar_canvas_list[0], 0, 0)
+        canvas_layout.addLayout(self.toolbar_canvas_list[1], 0, 1)
+        canvas_layout.addLayout(self.toolbar_canvas_list[2], 1, 0)
+        canvas_layout.addLayout(self.toolbar_canvas_list[3], 1, 1)
+
 
         checkbox_layout= QHBoxLayout()
         # Add the canvas to the layout
@@ -176,7 +183,8 @@ class Gui_3d(QMainWindow):
         print(data_array.dims)
         
         # plot the main graph
-        self.im = self.data2D_plot.plot(ax=self.axes[0], cmap='terrain', add_colorbar=False)
+        # self.im = self.data2D_plot.plot(ax=self.axes[0], cmap='terrain', add_colorbar=False)
+        self.im = self.data2D_plot.plot(ax=self.axes[0], cmap='seismic', add_colorbar=False)
         self.axes[0].figure.colorbar(self.im, ax=self.axes[0])
         colorscale_slider(canvas_layout, self.im, self.axes[0].figure.canvas)
         
@@ -314,9 +322,9 @@ class Gui_3d(QMainWindow):
             action = menu.exec_(QCursor.pos())
     
             if action == action1:
-                print('data2D_plot=data.sel({data.dims[2]:slice('+f"{self.axis[2][self.slider1.value()]:.2f}"+', '+f"{self.axis[2][self.slider1.value()+self.slider2.value()+1]:.2f}"+')}).mean(dim=data.dims[2])' )
+                print('data2D_plot=data.sel({data.dims[2]:slice('+f"{self.axis[2][self.slider1.value()]}"+', '+f"{self.axis[2][self.slider1.value()+self.slider2.value()+1]}"+')}).mean(dim=data.dims[2])' )
             elif action == action2:
-                print('yellow_vertical,yellow_horizontal,green_vertical,green_horizontal= '+ f"{self.dot1.center[0]:.2f} ,{self.dot1.center[1]:.2f},{self.dot2.center[0]:.2f},{self.dot2.center[1]:.2f}")
+                print('yellow_vertical,yellow_horizontal,green_vertical,green_horizontal= '+ f"{self.dot1.center[0]} ,{self.dot1.center[1]},{self.dot2.center[0]},{self.dot2.center[1]}")
 
         elif ax==self.axes[2]:
             menu = QMenu(canvas)
@@ -387,11 +395,11 @@ class Gui_3d(QMainWindow):
             if action == action1:
                 # Integrated intensity box
                 print("data.loc[{data.dims[0]: slice(" +
-              f"{min(self.dot1.center[1], self.dot2.center[1]):.2f}, " +
-              f"{max(self.dot1.center[1], self.dot2.center[1]):.2f}" +
+              f"{min(self.dot1.center[1], self.dot2.center[1])}, " +
+              f"{max(self.dot1.center[1], self.dot2.center[1])}" +
               "), data.dims[1]: slice(" +
-              f"{min(self.dot1.center[0], self.dot2.center[0]):.2f}, " +
-              f"{max(self.dot1.center[0], self.dot2.center[0]):.2f}" +
+              f"{min(self.dot1.center[0], self.dot2.center[0])}, " +
+              f"{max(self.dot1.center[0], self.dot2.center[0])}" +
               ")}].mean(dim=(data.dims[0], data.dims[1]))  # Box integration")
                 
    
@@ -505,6 +513,10 @@ class Gui_3d(QMainWindow):
         self.integrated_mdc.plot(ax=self.axes[1])
 
     def box(self): # generate the intensity graph between the four cursors in the main graph
+        # yscale = self.axes[3].get_yscale()
+        # ylim = self.axes[3].get_ylim()
+        # xscale = self.axes[3].get_xscale()
+        # xlim = self.axes[3].get_xlim()
         self.axes[3].clear()
         
         x0,y0=self.dot1.center
@@ -520,11 +532,17 @@ class Gui_3d(QMainWindow):
             self.int.plot(ax=self.axes[3])
             self.dot, = self.axes[3].plot([self.axis[2][self.slider1.value()]], [self.int[self.slider1.value()]], 'ro', markersize=8)
             self.update_all_canvases()
+            # self.axes[3].set_ylim(ylim)
+            # self.axes[3].set_xscale(xscale)
+            # self.axes[3].set_xlim(xlim)
+            # self.axes[3].set_xlim(0.5,6)
+            # self.axes[3].set_ylim(1.2*self.int.data[4:-1].min(),1.2*self.int.data[4:-1].max())
 
     def update_show(self): # update the main graph as well as the relevant EDC and MDC cuts. Also the box intensity
         self.update_edc()
         self.update_mdc()
         self.im.set_array(self.data2D_plot)
+        # self.im.set_clim(vmin=self.data2D_plot.min(), vmax=self.data2D_plot.max())
         self.box() # update the intensity box graph
         time1 = self.axis[2][self.slider1.value()]
         timedt1 = self.axis[2][self.slider1.value() + self.slider2.value()]

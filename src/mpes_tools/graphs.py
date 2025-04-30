@@ -30,8 +30,6 @@ class showgraphs(QMainWindow):
         self.setCentralWidget(central_widget)
         layout = QGridLayout(central_widget)
         
-        # print(len(x),len(list_plot_fits))
-        # print(list_plot_fits[0])
         self.slider = QSlider()
         self.slider.setOrientation(1)  # 1 = Qt.Horizontal
         self.slider.setMinimum(0)
@@ -45,6 +43,8 @@ class showgraphs(QMainWindow):
         self.canvas = FigureCanvas(self.figure)
         plt.close(self.figure)
         
+        handler = RightClickHandler(self.canvas, self.axis,self.show_pupup_window)
+        self.canvas.mpl_connect("button_press_event", handler.on_right_click)
         self.toolbar = NavigationToolbar(self.canvas, self)
         
         
@@ -110,6 +110,18 @@ class showgraphs(QMainWindow):
         
     def show_pupup_window(self,canvas,ax):
         # print(f"External callback: clicked subplot ({i},{j})")
+        if ax==self.axis:
+            print(f'''
+import xarray as xr
+import numpy as np
+
+data_array = xr.DataArray(
+    data=np.array({data.values.tolist()}),
+    dims={dims},
+    coords={coords},
+    name="{name}"
+)
+''')
         for i, ax_item in enumerate(self.ax_list):
             if ax == ax_item:
                 data = self.data_list[i]
@@ -173,11 +185,9 @@ data_array = xr.DataArray(
         plt.close(figure)
         
         # ax.errorbar(data_array[data_array.dims[0]].values, data_array.values, yerr=y_err, fmt='o', capsize=3)
-        ax.plot(data_array[data_array.dims[0]].values, data_array.values,'o')
-        # data_array.plot(ax=ax,fmt='o', capsize=3)
+        ax.plot(data_array[data_array.dims[0]].values, data_array.values,'-')
         ax.set_title(title)
-        # print('create_plot'+f"self.ax id: {id(ax)}")
-        # Create a FigureCanvas to embed in the Qt layout
+
         canvas = FigureCanvas(figure)
         toolbar = NavigationToolbar(canvas, self)
 
@@ -195,7 +205,7 @@ data_array = xr.DataArray(
         if state == Qt.Checked:
             self.ax_list[i].errorbar(data_array[data_array.dims[0]].values, data_array.values, yerr=y_err, fmt='o', capsize=3)
         else:
-            self.ax_list[i].plot(data_array[data_array.dims[0]].values, data_array.values,'o')
+            self.ax_list[i].plot(data_array[data_array.dims[0]].values, data_array.values,'-')
             # data_array.plot(ax=self.ax_list[i], fmt='o', capsize=3)
         self.ax_list[i].set_title(data_array.name)
         self.cursor_list[i]=self.ax_list[i].axvline(x=self.x[self.slider.value()], color='r', linestyle='--')
@@ -220,19 +230,7 @@ data_array = xr.DataArray(
         self.axis.legend()
         self.figure.tight_layout()
         self.canvas.draw()
-    # def create_plot_widget1(self,x_data, y_data, title, return_axes=False):
-    #     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-    #     import matplotlib.pyplot as plt
-    
-    #     fig, ax = plt.subplots()
-    #     canvas = FigureCanvas(fig)  
-    
-    #     ax.plot(x_data,y_data)
-    #     ax.set_title(title)
-    
-    #     if return_axes:
-    #         return canvas, ax  # Allow updating later
-    #     return canvas
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
