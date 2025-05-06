@@ -9,7 +9,6 @@ from mpes_tools.Gui_3d import Gui_3d
 import xarray as xr
 from mpes_tools.hdf5 import load_h5
 from IPython.core.getipython import get_ipython
-from mpes_tools.double_click_handler import SubplotClickHandler
 from mpes_tools.right_click_handler import RightClickHandler
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QCursor
@@ -219,92 +218,13 @@ data.loc[{{
     '{self.axes[0]}': slice({self.data_array[self.axes[0]][self.slider3[3].value()].item()}, {self.data_array[self.axes[0]][self.slider3[3].value() + self.slider4[3].value()].item()})
 }}].mean(dim=('{self.axes[1]}', '{self.axes[0]}')) 
 """)
-    def external_callback(self, ax):
-        # print(f"External callback: clicked subplot ({i},{j})")
-        if ax==self.graphs[0].gca():
-            content= f"""
-data='your data_array'
-#the energy plot
-data.loc[
-    {{
-        '{self.axes[2]}': slice(
-            {self.data_array[self.axes[2]][self.slider1[0].value()].item()},
-            {self.data_array[self.axes[2]][self.slider1[0].value() + self.slider2[0].value()].item()}
-        ),
-        '{self.axes[3]}': slice(
-            {self.data_array[self.axes[3]][self.slider3[0].value()].item()},
-            {self.data_array[self.axes[3]][self.slider3[0].value() + self.slider4[0].value()].item()}
-        )
-    }}
-].mean(dim=('{self.axes[2]}', '{self.axes[3]}')).T
-
-            """
-        elif ax==self.graphs[1].gca():
-            content= f"""
-data='your data_array'
-#the ky plot
-data.loc[
-    {{
-        '{self.axes[1]}': slice(
-            {self.data_array[self.axes[1]][self.slider1[1].value()].item()},
-            {self.data_array[self.axes[1]][self.slider1[1].value() + self.slider2[1].value()].item()}
-        ),
-        '{self.axes[3]}': slice(
-            {self.data_array[self.axes[3]][self.slider3[1].value()].item()},
-            {self.data_array[self.axes[3]][self.slider3[1].value() + self.slider4[1].value()].item()}
-        )
-    }}
-].mean(dim=('{self.axes[1]}', '{self.axes[3]}')).T
-            """
-        elif ax==self.axis_list[2]:
-            content= f"""
-data='your data_array'
-#the kx plot
-data.loc[
-    {{
-        '{self.axes[0]}': slice(
-            {self.data_array[self.axes[0]][self.slider1[2].value()].item()},
-            {self.data_array[self.axes[0]][self.slider1[2].value() + self.slider2[2].value()].item()}
-        ),
-        '{self.axes[3]}': slice(
-            {self.data_array[self.axes[3]][self.slider3[2].value()].item()},
-            {self.data_array[self.axes[3]][self.slider3[2].value() + self.slider4[2].value()].item()}
-        )
-    }}
-].mean(dim=('{self.axes[0]}', '{self.axes[3]}')).T
-            """
-        elif ax==self.axis_list[3]:
-            content= f"""
-data='your data_array'
-#the kx,ky plot
-data.loc[
-    {{
-        '{self.axes[1]}': slice(
-            {self.data_array[self.axes[1]][self.slider1[3].value()].item()},
-            {self.data_array[self.axes[1]][self.slider1[3].value() + self.slider2[3].value()].item()}
-        ),
-        '{self.axes[0]}': slice(
-            {self.data_array[self.axes[0]][self.slider3[3].value()].item()},
-            {self.data_array[self.axes[0]][self.slider3[3].value()+ self.slider4[3].value()].item()}
-        )
-    }}
-].mean(dim=('{self.axes[1]}', '{self.axes[0]}'))
-            """
-        shell = get_ipython()
-        payload = dict(
-            source='set_next_input',
-            text=content,
-            replace=False,
-        )
-        shell.payload_manager.write_payload(payload, single=False)
-        shell.run_cell('pass')
-        print('results extracted!')
+    
 
     def open_graph_kxkydt(self):
         E1=self.data_array[self.axes[2]][self.slider1[0].value()].item()
         E2=self.data_array[self.axes[2]][self.slider1[0].value()+self.slider2[0].value()+1].item()
         data_kxkydt = self.data_array.loc[{self.axes[2]:slice(E1,E2)}].mean(dim=(self.axes[2]))
-        graph_window=Gui_3d(data_kxkydt, self.slider3[0].value(), self.slider4[0].value(),'METIS')
+        graph_window=Gui_3d(data_kxkydt, self.slider3[0].value(), self.slider4[0].value())
         # Show the graph window
         graph_window.show()
         self.graph_windows.append(graph_window)
@@ -313,7 +233,7 @@ data.loc[
         ky1=self.data_array[self.axes[1]][self.slider1[1].value()].item()
         ky2=self.data_array[self.axes[1]][self.slider1[1].value()+self.slider2[1].value()+1].item()
         data_kxedt = self.data_array.loc[{self.axes[1]:slice(ky1,ky2)}].mean(dim=(self.axes[1]))
-        graph_window = Gui_3d(data_kxedt, self.slider3[1].value(), self.slider4[1].value(),'METIS')
+        graph_window = Gui_3d(data_kxedt, self.slider3[1].value(), self.slider4[1].value())
         # Show the graph window
         graph_window.show()
         self.graph_windows.append(graph_window)
@@ -322,7 +242,7 @@ data.loc[
         kx1=self.data_array[self.axes[0]][self.slider1[2].value()].item()
         kx2=self.data_array[self.axes[0]][self.slider1[2].value()+self.slider2[2].value()+1].item()
         data_kyedt = self.data_array.loc[{self.axes[0]:slice(kx1,kx2)}].mean(dim=(self.axes[0]))
-        graph_window = Gui_3d(data_kyedt, self.slider3[2].value(), self.slider4[2].value(),'METIS')
+        graph_window = Gui_3d(data_kyedt, self.slider3[2].value(), self.slider4[2].value())
         # Show the graph window
         
         graph_window.show()
