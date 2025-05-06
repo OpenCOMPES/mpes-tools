@@ -28,12 +28,12 @@ class Gui_3d(QMainWindow):
         self.setWindowTitle("Graph Window")
         self.setGeometry(100, 100, 1200, 1000)
 
-        # Create a central widget for the graph
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+        # Create a main widget for the graph
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
         
         layout = QVBoxLayout()
-        central_widget.setLayout(layout)
+        main_widget.setLayout(layout)
 
         self.click_handlers = []
         self.handler_list = []
@@ -105,7 +105,6 @@ class Gui_3d(QMainWindow):
         # self.slider1.setFixedSize(200, 12)  # Change the width and height as needed
         # self.slider2.setFixedSize(200, 12)  # Change the width and height as needed
         
-        # Create a layout for the central widget
         slider_layout.addWidget(self.slider1)
         slider_layout.addWidget(self.slider1_label)
         slider_layout.addWidget(self.slider2)

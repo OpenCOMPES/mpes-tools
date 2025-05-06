@@ -172,7 +172,7 @@ data_array = xr.DataArray(
         plt.close(figure)
         
         # ax.errorbar(data_array[data_array.dims[0]].values, data_array.values, yerr=y_err, fmt='o', capsize=3)
-        ax.plot(data_array[data_array.dims[0]].values, data_array.values,'o')
+        ax.plot(data_array[data_array.dims[0]].values, data_array.values,marker='o', linestyle='-')
         # data_array.plot(ax=ax,fmt='o', capsize=3)
         ax.set_title(title)
         # print('create_plot'+f"self.ax id: {id(ax)}")
@@ -194,7 +194,7 @@ data_array = xr.DataArray(
         if state == Qt.Checked:
             self.ax_list[i].errorbar(data_array[data_array.dims[0]].values, data_array.values, yerr=y_err, fmt='o', capsize=3)
         else:
-            self.ax_list[i].plot(data_array[data_array.dims[0]].values, data_array.values,'o')
+            self.ax_list[i].plot(data_array[data_array.dims[0]].values, data_array.values,marker='o', linestyle='-')
             # data_array.plot(ax=self.ax_list[i], fmt='o', capsize=3)
         self.ax_list[i].set_title(data_array.name)
         self.cursor_list[i]=self.ax_list[i].axvline(x=self.x[self.slider.value()], color='r', linestyle='--')
