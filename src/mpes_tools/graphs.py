@@ -5,7 +5,6 @@ from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 from IPython.core.getipython import get_ipython
-from mpes_tools.double_click_handler import SubplotClickHandler
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import xarray as xr
 from mpes_tools.right_click_handler import RightClickHandler
