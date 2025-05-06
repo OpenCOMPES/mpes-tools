@@ -11,7 +11,6 @@ import pickle
 from mpes_tools.fit_panel import fit_panel
 from mpes_tools.fit_panel_single import fit_panel_single
 from IPython.core.getipython import get_ipython
-from mpes_tools.double_click_handler import SubplotClickHandler
 import xarray as xr
 from mpes_tools.right_click_handler import RightClickHandler
 from PyQt5.QtWidgets import QMenu,QGridLayout,QHBoxLayout, QSizePolicy,QLabel
@@ -23,7 +22,7 @@ from matplotlib.figure import Figure
 #graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
 # Two vertical cursors and two horizontal cursors are defined in the main graph with each same color for the cursors being horizontal and vertical intercept each other in a dot so one can move either each cursor or the dot itself which will move both cursors. 
 class Gui_3d(QMainWindow):  
-    def __init__(self,data_array: xr.DataArray,t,dt,technique):
+    def __init__(self,data_array: xr.DataArray,t=None,dt=None):
         super().__init__()
 
         self.setWindowTitle("Graph Window")
@@ -118,23 +117,23 @@ class Gui_3d(QMainWindow):
             handler = RightClickHandler(self.canvases[idx], ax,self.show_pupup_window)
             self.canvases[idx].mpl_connect("button_press_event", handler.on_right_click)
             self.handler_list.append(handler)
-        
 
 
         #define the data_array
         self.data=data_array
         self.axis=[data_array.coords[dim].data for dim in data_array.dims]
-        if technique == 'Phoibos':
-            self.axis[1]=self.axis[1]-21.7
-            self.data = self.data.assign_coords(Ekin=self.data.coords['Ekin'] -21.7)
 
+        
+        if t is not None and dt is not None:
+            self.t=t
+            self.dt=dt
+        else:
+            self.t=0
+            self.dt=0
         # define the cut for the spectra of the main graph
-        # self.data2D_plot=self.data.isel({self.data.dims[2]:slice(t, t+dt+1)}).mean(dim=self.data.dims[2])
-        self.data2D_plot=self.data.sel({self.data.dims[2]:slice(self.axis[2][t], self.axis[2][t + dt])}).mean(dim=self.data.dims[2])
+        self.data2D_plot=self.data.sel({self.data.dims[2]:slice(self.axis[2][self.t], self.axis[2][self.t + self.dt])}).mean(dim=self.data.dims[2])
         
         #Initialize the relevant prameters
-        self.t=t
-        self.dt=dt
         self.active_cursor = None
         self.Line1=None
         self.Line2=None
@@ -147,33 +146,32 @@ class Gui_3d(QMainWindow):
         
         # sliders for the delay
         self.slider1.setRange(0,len(self.axis[2])-1)
-        self.slider1_label.setText(self.data.dims[2]+": 0")
-        self.slider2_label.setText("Δ"+self.data.dims[2]+": 0")
-        
+        self.slider1.setValue(self.t)
+        self.slider2.setValue(self.dt)
+        self.slider1_label.setText(self.data.dims[2]+ f": {self.data[self.data.dims[2]][self.t].item():.2f}")
+        self.slider2_label.setText("Δ"+self.data.dims[2]+f": {self.dt}")
+    
         self.slider1.valueChanged.connect(self.slider1_changed)
         self.slider2.valueChanged.connect(self.slider2_changed)
         
         
         #create a menu for the fit panel
         menu_bar = self.menuBar()
-        graph_menu1 = menu_bar.addMenu("Fit Panel")
+        fit_menu = menu_bar.addMenu("Fit Panel")
         
         energy_panel_action = QAction('EDC',self)
         energy_panel_action.triggered.connect(self.fit_energy_panel)
-        graph_menu1.addAction(energy_panel_action)
+        fit_menu.addAction(energy_panel_action)
         
         momentum_panel_action = QAction('MDC',self)
         momentum_panel_action.triggered.connect(self.fit_momentum_panel)
-        graph_menu1.addAction(momentum_panel_action)
+        fit_menu.addAction(momentum_panel_action)
         
         box_panel_action = QAction('box',self)
         box_panel_action.triggered.connect(self.fit_box_panel)
-        graph_menu1.addAction(box_panel_action)
-        
+        fit_menu.addAction(box_panel_action)
         
         self.graph_windows=[]
-        
-        print(data_array.dims)
         
         # plot the main graph
         self.im = self.data2D_plot.plot(ax=self.axes[0], cmap='terrain', add_colorbar=False)
@@ -182,10 +180,10 @@ class Gui_3d(QMainWindow):
         
         # define the initial positions of the cursors in the main graph
         
-        initial_x = 0
-        initial_y = 0
-        initial_x2 = 0.5
-        initial_y2 = 0.5
+        initial_x = self.data[self.data.dims[1]].values[int(len(self.data[self.data.dims[1]])/3)]
+        initial_y = self.data[self.data.dims[0]].values[int(len(self.data[self.data.dims[0]])/3)]
+        initial_x2 = self.data[self.data.dims[1]].values[int(2*len(self.data[self.data.dims[1]])/3)]
+        initial_y2 = self.data[self.data.dims[0]].values[int(2*len(self.data[self.data.dims[0]])/3)]
         ax = self.axes[0]
         # define the lines for the cursors
         ymin, ymax = self.axes[0].get_ylim()
@@ -421,12 +419,7 @@ class Gui_3d(QMainWindow):
             self.cursor_label[3].setText(f"{base}: {value:.2f}")
         # self.change_pixel_to_arrayslot()
         self.update_show()
-        try:
-            num = float(value)
-            # print(f"Cursor {index+1} changed to: {num}")
-            # Update graph logic here
-        except ValueError:
-            print("Invalid input!")
+
         
     def slider1_changed(self,value): # change the slider controlling the third dimension
         # self.slider1_label.setText(str(value))
