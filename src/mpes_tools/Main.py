@@ -88,7 +88,8 @@ class ARPES_Analyser(QMainWindow):
                 V1=V1[list(V1.data_vars)[0]]
 
         axis=[V1['Angle'],V1['Ekin']-21.7,V1['delay']]
-        graph_window= Gui_3d(V1,0,0,'Phoibos')
+        V1 = V1.assign_coords(Ekin=V1.coords['Ekin'] -21.7)
+        graph_window= Gui_3d(V1)
         graph_window.show()
         self.graph_windows.append(graph_window)
 
