@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from lmfit import CompositeModel, Model
 import inspect
-from .movable_vertical_cursors_graph import MovableCursors
-from .make_model import make_model
-from .graphs2 import showgraphs
+from mpes_tools.movable_vertical_cursors_graph import MovableCursors
+from mpes_tools.make_model import make_model
+from mpes_tools.graphs import showgraphs
 
 
 
