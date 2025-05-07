@@ -35,6 +35,8 @@ dependencies = [
     "numpy>=1.26.1,<2.0",
     "PyQt5>=5.0.0",
     "xarray>=0.20.2",
+    "nxarray>=0.4.4",
+   "superqt >=0.3.0",
 ]
 
 [project.urls]

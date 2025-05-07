@@ -46,7 +46,7 @@ def recursive_write_metadata(h5group: h5py.Group, node: dict):
             try:
                 h5group.create_dataset(key, data=str(item))
                 print(f"Saved {key} as string.")
-            except Exception as exc:
+            except BaseException as exc:
                 raise ValueError(
                     f"Unknown error occurred, cannot save {item} of type {type(item)}.",
                 ) from exc
