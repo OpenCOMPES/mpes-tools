@@ -14,9 +14,10 @@ jobs:
     name: Upload release to PyPI
     runs-on: ubuntu-latest
     environment:
-      name: testpypi
-      # url: https://pypi.org/p/mpes-tools
-      url: https://test.pypi.org/p/mpes-tools
+      name: pypi
+      url: https://pypi.org/p/mpes-tools
+      # name: testpypi
+      # url: https://test.pypi.org/p/mpes-tools
     permissions:
       id-token: write
 
@@ -37,4 +38,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
-          repository-url: https://test.pypi.org/legacy/
+          # repository-url: https://test.pypi.org/legacy/
