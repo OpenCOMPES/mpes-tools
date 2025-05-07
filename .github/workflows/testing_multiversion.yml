@@ -34,4 +34,5 @@ jobs:
 
       - name: Run tests on python ${{matrix.python-version}}
         run: |
+          export QT_QPA_PLATFORM=offscreen
           pytest --full-trace --show-capture=no -sv -n auto tests/
