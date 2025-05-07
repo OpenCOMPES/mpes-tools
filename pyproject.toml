@@ -19,22 +19,26 @@ authors = [
 readme = "README.md"
 keywords = ["mpes", "arpes", "trarpes", "gui"]
 license = { file = "LICENSE" }
-requires-python = ">=3.9,<3.13"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
 dependencies = [
+    "ipython>=8.0.0",
     "lmfit>=1.0.3",
     "matplotlib>=3.8.0",
     "numpy>=1.26.1,<2.0",
     "PyQt5>=5.0.0",
     "xarray>=0.20.2",
+    "nxarray>=0.4.4",
+    "superqt >=0.3.0",
 ]
 
 [project.urls]
@@ -47,6 +51,7 @@ dev = [
     "pytest-cov>=3.0.0",
     "pytest-xdist>=2.5.0",
     "pytest-clarity>=1.0.1",
+    "pytest-qt",
     "ruff<0.3.0,>=0.1.7",
     "mypy<1.10.0,>=1.6.0",
     "pre-commit>=3.0.0",

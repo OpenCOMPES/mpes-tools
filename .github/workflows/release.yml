@@ -1,0 +1,41 @@
+name: Upload Python Package
+
+# Workflow runs a release job on every published tag.
+# The package is distributed as sed-processor
+on:
+  release:
+    types: [published]
+
+env:
+  python-version: 3.12
+
+jobs:
+  release:
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mpes-tools
+      # name: testpypi
+      # url: https://test.pypi.org/p/mpes-tools
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv and set the python version to ${{ env.python-version }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ env.python-version }}
+
+      - name: Build package
+        run: uv build
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          # repository-url: https://test.pypi.org/legacy/

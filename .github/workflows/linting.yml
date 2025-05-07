@@ -1,0 +1,45 @@
+name: linting
+
+# Triggers the workflow on push for all branches
+on:
+  push:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out repo and set up Python
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Setup python
+
+      - name: Install uv and set the python version to 3.12
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.12
+
+      - name: Install package and dev dependencies
+        run: |
+          uv pip install ".[dev]"
+
+      # Linting steps, execute all linters even if one fails
+      - name: ruff check
+        run:
+          ruff check src/mpes_tools tests
+      - name: ruff formatting
+        if: ${{ always() }}
+        run:
+          ruff format --check src/mpes_tools tests
+      - name: mypy
+        if: ${{ always() }}
+        run:
+          mypy src/mpes_tools tests
+      - name: spellcheck
+        if: ${{ always() }}
+        uses: streetsidesoftware/cspell-action@v6
+        with:
+          check_dot_files: false
+          incremental_files_only: false
+          config: './cspell.json'

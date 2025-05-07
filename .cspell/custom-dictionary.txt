@@ -1,0 +1,16 @@
+ARPES
+cmap
+codemirror
+ipython
+kernelspec
+matplotlib
+mpes
+nbconvert
+nbformat
+numpy
+nxarray
+pygments
+pyplot
+pytestqt
+qtbot
+venv

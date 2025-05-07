@@ -1,0 +1,40 @@
+name: pytest and coverage report
+
+# Triggers the workflow on push for all branches and PR only for main
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out repo and set up Python
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Setup python
+      - name: Install uv and set the python version to 3.12
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.12
+
+      - name: Install package
+        run: |
+          uv pip install -e ".[dev]"
+
+      # Run pytest with coverage report, saving to xml
+      - name: Run tests on python 3.12
+        run: |
+          export QT_QPA_PLATFORM=offscreen
+          pytest --cov --cov-report xml:cobertura.xml --full-trace --show-capture=no -sv -n auto tests/
+
+      # Take report and upload to coveralls
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./cobertura.xml

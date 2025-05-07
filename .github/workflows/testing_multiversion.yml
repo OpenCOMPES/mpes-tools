@@ -1,0 +1,38 @@
+# Tests for all supported versions [Python 3.9|3.10|3.11|3.12]
+name: Unit Tests
+
+on:
+  schedule:
+    - cron:  '0 1 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    # Using matrix strategy
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      # Check out repo and set up Python
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv and set the python version to ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package and test dependencies
+        run: |
+          uv pip install ".[dev]"
+
+      - name: Run tests on python ${{matrix.python-version}}
+        run: |
+          export QT_QPA_PLATFORM=offscreen
+          pytest --full-trace --show-capture=no -sv -n auto tests/
