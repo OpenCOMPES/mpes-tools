@@ -2,7 +2,6 @@ import os
 
 import nxarray as nxr
 import pytest
-from PyQt5.QtWidgets import QApplication
 
 from mpes_tools import ARPES_Analyser
 from mpes_tools import fit_panel
@@ -10,7 +9,6 @@ from mpes_tools import Gui_3d
 from mpes_tools import show_4d_window
 
 test_dir = os.path.dirname(__file__)
-app = QApplication([])
 
 
 @pytest.fixture
@@ -31,7 +29,7 @@ def data_2d(data_3d):
     return data
 
 
-def test_gui_4d_initialization(data_4d):
+def test_gui_4d_initialization(data_4d, qtbot):  # noqa: ARG001
     # Initialize the 3D GUI with the processed data
     graph_window = show_4d_window(data_4d)
 
@@ -39,7 +37,7 @@ def test_gui_4d_initialization(data_4d):
     assert graph_window is not None
 
 
-def test_gui_3d_initialization(data_3d):
+def test_gui_3d_initialization(data_3d, qtbot):  # noqa: ARG001
     # Initialize the 3D GUI with the processed data
     graph_window = Gui_3d(data_3d)
 
@@ -47,7 +45,7 @@ def test_gui_3d_initialization(data_3d):
     assert graph_window is not None
 
 
-def test_fit_gui_initialization(data_2d):
+def test_fit_gui_initialization(data_2d, qtbot):  # noqa: ARG001
     # Initialize the 3D GUI with the processed data
     graph_window = fit_panel(data_2d, 0, 0, "")
 
@@ -55,7 +53,7 @@ def test_fit_gui_initialization(data_2d):
     assert graph_window is not None
 
 
-def test_main_gui_initialization():
+def test_main_gui_initialization(qtbot):  # noqa: ARG001
     # Initialize the 3D GUI with the processed data
     graph_window = ARPES_Analyser()
 

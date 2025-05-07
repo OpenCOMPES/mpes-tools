@@ -11,4 +11,5 @@ numpy
 nxarray
 pygments
 pyplot
+qtbot
 venv
