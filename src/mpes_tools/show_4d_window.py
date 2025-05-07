@@ -152,6 +152,10 @@ class show_4d_window(QMainWindow):
         # file_menu.addAction(open_graph_action)
         self.graph_windows = []
 
+        self.colorscale_energy=[]
+        self.colorscale_ky=[]
+        self.colorscale_kx=[]
+        self.colorscale_dt=[]
         self.show()
         self.load_data(data_array)
 
@@ -318,10 +322,10 @@ data.loc[{{
         self.im2.set_clim([self.data_array.min(),self.data_array.max()])
         self.im3.set_clim([self.data_array.min(),self.data_array.max()])
     
-        colorscale_slider(self.graph_layout_list[0], self.im0, self.canvases[0], [self.data_array.min(),self.data_array.max()])
-        colorscale_slider(self.graph_layout_list[1], self.im1, self.canvases[1], [self.data_array.min(),self.data_array.max()])
-        colorscale_slider(self.graph_layout_list[2], self.im2, self.canvases[2], [self.data_array.min(),self.data_array.max()])
-        colorscale_slider(self.graph_layout_list[3], self.im3, self.canvases[3], [self.data_array.min(),self.data_array.max()])
+        self.colorscale_energy=colorscale_slider(self.graph_layout_list[0], self.im0, self.canvases[0], [self.data_array.min(),self.data_array.max()])
+        self.colorscale_ky=colorscale_slider(self.graph_layout_list[1], self.im1, self.canvases[1], [self.data_array.min(),self.data_array.max()])
+        self.colorscale_kx=colorscale_slider(self.graph_layout_list[2], self.im2, self.canvases[2], [self.data_array.min(),self.data_array.max()])
+        self.colorscale_dt=colorscale_slider(self.graph_layout_list[3], self.im3, self.canvases[3], [self.data_array.min(),self.data_array.max()])
         
     def initialize_cursors(self):
         
