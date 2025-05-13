@@ -76,8 +76,9 @@ class colorscale_slider(QWidget):
             self.data = self.im.get_array().data
             self.vmin, self.vmax=float(np.min(self.data)), float(np.max(self.data))
             self.im.set_clim(self.vmin, self.vmax)
-            self.slider.setMaximum(int(1.0* self.vmax))
-            self.slider.setMinimum(int(1 * self.vmin))
+            self.slider.setValue([self.vmin,self.vmax])
+            self.slider.setMaximum(self.vmax)
+            self.slider.setMinimum(self.vmin)
             self.canvas.draw_idle()
     def value_change_vmax(self):
         value=float(self.input_vmax.text())
