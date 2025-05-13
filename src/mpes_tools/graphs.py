@@ -147,37 +147,6 @@ data_array = xr.DataArray(
                 
 
         
-    def external_callback(self,ax):
-        # print(f"External callback: clicked subplot ({i},{j})")
-        for i, ax_item in enumerate(self.ax_list):
-            if ax == ax_item:
-                data = self.data_list[i]
-                coords = {k: data.coords[k].values.tolist() for k in data.coords}
-                dims = data.dims
-                name = data.name if data.name else f"data_{i}"
-                content = f"""
-import xarray as xr
-import numpy as np
-
-data_array = xr.DataArray(
-    data=np.array({data.values.tolist()}),
-    dims={dims},
-    coords={coords},
-    name="{name}"
-)
-"""
-                break
-        shell = get_ipython()
-        payload = dict(
-            source='set_next_input',
-            text=content,
-            replace=False,
-        )
-        shell.payload_manager.write_payload(payload, single=False)
-        # shell.run_cell("%gui qt")
-        QApplication.processEvents()
-        print('results extracted!')
-        
     def create_plot_widget(self, data_array, y_err , title):
         """Creates a plot widget for displaying a function."""
         

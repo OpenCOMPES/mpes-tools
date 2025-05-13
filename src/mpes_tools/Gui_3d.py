@@ -21,6 +21,7 @@ from mpes_tools.dot_handler import Dot_handler
 from mpes_tools.colorscale_slider_handler import colorscale_slider
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT
 from matplotlib.figure import Figure
+from mpes_tools.axis_editor import AxisEditor
 #graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
 # Two vertical cursors and two horizontal cursors are defined in the main graph with each same color for the cursors being horizontal and vertical intercept each other in a dot so one can move either each cursor or the dot itself which will move both cursors. 
 class Gui_3d(QMainWindow):  
@@ -227,7 +228,8 @@ class Gui_3d(QMainWindow):
         ax.add_line(self.cursor_vert2)
         ax.add_line(self.cursor_horiz2)
         ax.add_patch(self.dot2)
-
+        self.editor1=AxisEditor(self.canvases[0], self.axes[0])
+        self.editor2=AxisEditor(self.canvases[1], self.axes[1])
         # self.change_pixel_to_arrayslot()
         
         # define the integrated EDC and MDC 
@@ -253,6 +255,7 @@ class Gui_3d(QMainWindow):
         for idx, d in enumerate(self.dots_list):
             d_handler = Dot_handler(self.canvases[0].figure,self.axes[0], d, self.dots_function[idx])
             self.cursor_dot_handler.append(d_handler)
+        
     def update_all_canvases(self):
         for canvas in self.canvases:
             canvas.draw_idle()         
@@ -485,15 +488,22 @@ class Gui_3d(QMainWindow):
             self.edc_yellow.plot(ax=self.axes[2],color='orange')
             self.edc_green.plot(ax=self.axes[2],color='green')
     def update_mdc(self):
+        if self.editor2.activation_x:
+            xlim = self.axes[1].get_xlim()
+        if self.editor2.activation_y:
+            ylim = self.axes[1].get_ylim()
         self.axes[1].clear()
         if self.checkbox_k.isChecked():
             self.integrate_k()
         else:
             self.data2D_plot.sel({self.data.dims[1]:self.dot1.center[0]}, method='nearest').plot(ax=self.axes[1],color='orange')
             self.data2D_plot.sel({self.data.dims[1]:self.dot2.center[0]}, method='nearest').plot(ax=self.axes[1],color='green')
-    
+        if self.editor2.activation_x:
+            self.axes[1].set_xlim(xlim)
+        if self.editor2.activation_y:
+            self.axes[1].set_ylim(ylim)
     def integrate_E(self): # integrate EDC between the two cursors in the main graph
-        self.axes[2].clear()
+        # self.axes[2].clear()
 
         x_min = min(self.dot2.center[1], self.dot1.center[1])
         x_max = max(self.dot2.center[1], self.dot1.center[1])
@@ -503,7 +513,7 @@ class Gui_3d(QMainWindow):
         self.integrated_edc.plot(ax=self.axes[2])
 
     def integrate_k(self): # integrate MDC between the two cursors in the main graph
-        self.axes[1].clear()
+        # self.axes[1].clear()
 
         x_min = min(self.dot1.center[0], self.dot2.center[0])
         x_max = max(self.dot1.center[0], self.dot2.center[0])

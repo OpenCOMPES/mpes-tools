@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel,QHBoxLayout,QGridLayout,QLineEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel,QHBoxLayout,QGridLayout,QLineEdit,QCheckBox
 from superqt import QRangeSlider
 from PyQt5.QtCore import Qt
 import numpy as np
@@ -13,6 +13,7 @@ class colorscale_slider(QWidget):
         self.im = imshow_artist
         self.canvas = canvas
         self.colorbar = None  # Optional: set this externally if you want to update a colorbar
+        
         if limits is None:
             self.data = imshow_artist.get_array().data
             self.vmin, self.vmax = float(np.min(self.data)), float(np.max(self.data))
@@ -29,6 +30,9 @@ class colorscale_slider(QWidget):
         # Slider Widget
         slider_widget = QWidget()
         slider_layout = QVBoxLayout(slider_widget)
+        
+        self.checkbox_autoscale = QCheckBox("Auto")
+        self.checkbox_autoscale.stateChanged.connect(self.autoscale)
         
         self.input_vmax = QLineEdit()
         self.input_vmax.setPlaceholderText("Value")
@@ -50,6 +54,7 @@ class colorscale_slider(QWidget):
         # self.vmax_label = QLabel(f"{self.vmax:.2e}")
         self.vmin_label = QLabel("")
         self.vmax_label = QLabel("")
+        slider_layout.addWidget(self.checkbox_autoscale)
         slider_layout.addWidget(self.input_vmax)
         slider_layout.addWidget(self.vmax_label)
         slider_layout.addWidget(self.slider)
@@ -66,7 +71,14 @@ class colorscale_slider(QWidget):
             layout.addWidget(h_container,0,0)
         else:
             layout.insertWidget(0, h_container)
-
+    def autoscale(self,state):
+        if self.checkbox_autoscale.isChecked():
+            self.data = self.im.get_array().data
+            self.vmin, self.vmax=float(np.min(self.data)), float(np.max(self.data))
+            self.im.set_clim(self.vmin, self.vmax)
+            self.slider.setMaximum(int(1.0* self.vmax))
+            self.slider.setMinimum(int(1 * self.vmin))
+            self.canvas.draw_idle()
     def value_change_vmax(self):
         value=float(self.input_vmax.text())
         self.vmax=value
