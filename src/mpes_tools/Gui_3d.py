@@ -19,6 +19,7 @@ from mpes_tools.cursor_handler import Cursor_handler
 from mpes_tools.dot_handler import Dot_handler
 from mpes_tools.colorscale_slider_handler import colorscale_slider
 from matplotlib.figure import Figure
+from mpes_tools.axis_editor import AxisEditor
 #graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
 # Two vertical cursors and two horizontal cursors are defined in the main graph with each same color for the cursors being horizontal and vertical intercept each other in a dot so one can move either each cursor or the dot itself which will move both cursors. 
 class Gui_3d(QMainWindow):  
@@ -216,6 +217,11 @@ class Gui_3d(QMainWindow):
         ax.add_line(self.cursor_vert2)
         ax.add_line(self.cursor_horiz2)
         ax.add_patch(self.dot2)
+        
+        self.editor_2d=AxisEditor(self.canvases[0], '2D')
+        self.editor_mdc=AxisEditor(self.canvases[1])
+        self.editor_edc=AxisEditor(self.canvases[2])
+        self.editor_int=AxisEditor(self.canvases[3])
 
         # self.change_pixel_to_arrayslot()
         
@@ -460,6 +466,8 @@ class Gui_3d(QMainWindow):
         graph_window.show()
         self.graph_windows.append(graph_window)
     def update_edc(self):
+        xlim = self.axes[2].get_xlim()
+        ylim = self.axes[2].get_ylim()
         self.axes[2].clear()
         if self.checkbox_e.isChecked():
             self.integrate_E()
@@ -468,13 +476,23 @@ class Gui_3d(QMainWindow):
             self.edc_green=self.data2D_plot.sel({self.data.dims[0]:self.dot2.center[1]}, method='nearest')
             self.edc_yellow.plot(ax=self.axes[2],color='orange')
             self.edc_green.plot(ax=self.axes[2],color='green')
+        if self.editor_edc.activation_x:
+            self.axes[2].set_xlim(xlim)
+        if self.editor_edc.activation_y:
+            self.axes[2].set_ylim(ylim)
     def update_mdc(self):
+        xlim = self.axes[1].get_xlim()
+        ylim = self.axes[1].get_ylim()
         self.axes[1].clear()
         if self.checkbox_k.isChecked():
             self.integrate_k()
         else:
             self.data2D_plot.sel({self.data.dims[1]:self.dot1.center[0]}, method='nearest').plot(ax=self.axes[1],color='orange')
             self.data2D_plot.sel({self.data.dims[1]:self.dot2.center[0]}, method='nearest').plot(ax=self.axes[1],color='green')
+        if self.editor_mdc.activation_x:
+            self.axes[1].set_xlim(xlim)
+        if self.editor_mdc.activation_y:
+            self.axes[1].set_ylim(ylim)
     
     def integrate_E(self): # integrate EDC between the two cursors in the main graph
         self.axes[2].clear()
@@ -497,6 +515,8 @@ class Gui_3d(QMainWindow):
         self.integrated_mdc.plot(ax=self.axes[1])
 
     def box(self): # generate the intensity graph between the four cursors in the main graph
+        xlim = self.axes[3].get_xlim()
+        ylim = self.axes[3].get_ylim()
         self.axes[3].clear()
         
         x0,y0=self.dot1.center
@@ -511,6 +531,10 @@ class Gui_3d(QMainWindow):
             
             self.int.plot(ax=self.axes[3])
             self.dot, = self.axes[3].plot([self.axis[2][self.slider1.value()]], [self.int[self.slider1.value()]], 'ro', markersize=8)
+            if self.editor_int.activation_x:
+                self.axes[3].set_xlim(xlim)
+            if self.editor_int.activation_y:
+                self.axes[3].set_ylim(ylim)
             self.update_all_canvases()
 
     def update_show(self): # update the main graph as well as the relevant EDC and MDC cuts. Also the box intensity
