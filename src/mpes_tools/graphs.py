@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QGridLayout,QSlider,QLabel,QCheckBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QGridLayout,QSlider,QLabel,QCheckBox,QAction
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
@@ -11,7 +11,7 @@ from mpes_tools.right_click_handler import RightClickHandler
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QCursor
 class showgraphs(QMainWindow):
-    def __init__(self, x, y_arrays,y_arrays_err,names,list_axis,list_plot_fits):
+    def __init__(self, x, y_arrays,y_arrays_err,names,list_axis,list_plot_fits,initial_parameters):
         super().__init__()
         self.setWindowTitle("Multiple Array Plots")
         self.setGeometry(100, 100, 800, 600)
@@ -24,6 +24,7 @@ class showgraphs(QMainWindow):
         self.num_plots = len(y_arrays)
         self.list_plot_fits=list_plot_fits 
         self.list_axis=list_axis
+        self.initial_parameters=initial_parameters
         # Create a central widget and layout
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -106,7 +107,20 @@ class showgraphs(QMainWindow):
         self.figure.tight_layout()
         self.canvas.draw()
         self.slider.valueChanged.connect(self.update_parameter)
+        #create a menu for the fit panel
+        menu_bar = self.menuBar()
+        exctract_menu = menu_bar.addMenu("extract")
         
+        initial_par_action = QAction('intial_parameters',self)
+        initial_par_action.triggered.connect(self.extract_initial_par)
+        exctract_menu.addAction(initial_par_action)
+        
+        # extract_fit_code_action = QAction('MDC',self)
+        # extract_fit_code_action.triggered.connect(self.extract_fit_code)
+        # exctract_menu.addAction(extract_fit_code_action)
+
+    def extract_initial_par(self):
+        print(self.initial_parameters)
     def show_pupup_window(self,canvas,ax):
         # print(f"External callback: clicked subplot ({i},{j})")
         for i, ax_item in enumerate(self.ax_list):

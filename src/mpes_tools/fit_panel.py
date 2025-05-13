@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtGui import QBrush, QColor
-from PyQt5.QtWidgets import QTextEdit, QLineEdit,QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QAction, QCheckBox, QPushButton, QListWidget, QTableWidget, QTableWidgetItem, QTableWidget, QCheckBox, QSplitter
+from PyQt5.QtWidgets import QDialog,QTextEdit, QLineEdit,QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QAction, QCheckBox, QPushButton, QListWidget, QTableWidget, QTableWidgetItem, QTableWidget, QCheckBox, QSplitter,QInputDialog
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QTableWidgetItem, QHBoxLayout, QCheckBox, QWidget
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -113,9 +113,13 @@ class fit_panel(QMainWindow):
         self.guess_button = QPushButton("Guess")
         self.guess_button.clicked.connect(self.button_guess_clicked)
         
+        self.load_button = QPushButton("load initial_params")
+        self.load_button.clicked.connect(self.load_button_clicked)
+        
         bigger_layout = QVBoxLayout()
         bigger_layout.addLayout(t0_layout)
         bigger_layout.addWidget(self.guess_button)
+        bigger_layout.addWidget(self.load_button)
         # Create a QListWidget
         self.list_widget = QListWidget()
         self.list_widget.addItems(["linear","Lorentz", "Gauss", "sinusoid","constant","jump"])
@@ -475,7 +479,42 @@ class fit_panel(QMainWindow):
             self.function_selected =self.jump2
         elif item.text()=='sinusoid':
             self.function_selected =self.sinusoid
+    def get_input_from_user(self,parent=None):
+        # Create a QDialog instance
+        dialog = QDialog(parent)
         
+        # Set dialog properties
+        dialog.setWindowTitle("Enter text")
+        dialog.resize(800, 300)  # Set the size of the dialog
+        
+        # Create widgets
+        label = QLabel("Your input:", dialog)
+        input_field = QTextEdit(dialog)
+        ok_button = QPushButton("OK", dialog)
+        
+        # Set up the layout
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(label)
+        layout.addWidget(input_field)
+        layout.addWidget(ok_button)
+        
+        # Connect OK button to accept the input
+        ok_button.clicked.connect(dialog.accept)
+        
+        # Execute the dialog and get the user input if accepted
+        if dialog.exec_() == QDialog.Accepted:
+            return input_field.toPlainText()  # Return the entered text
+        
+        return None  # Return None if the dialog was canceled
+
+    def load_button_clicked(self):
+        user_input = self.get_input_from_user()  # Call the function to get input
+        if user_input:
+            print("User input:", user_input)
+            
+        else:
+            print("Nothing provided.")
+           
     def button_guess_clicked(self):
         cursors= self.cursor_handler.cursors()
         self.y_f=self.y.isel({self.dim:slice(cursors[0], cursors[1])})
@@ -701,9 +740,11 @@ class fit_panel(QMainWindow):
         self.graph_windows.append(sg)
         
     def fit_all(self):
-        # C=False
+        initial_parameters= {
+            "cursors":[],
+            "cursors_x_values":[],
+            "params":[]}   
         list_plot_fits=[]
-        
         fixed_list=[]
         names=[]
         self.fit_results=[]
@@ -732,6 +773,8 @@ class fit_panel(QMainWindow):
         if self.offset_state==True:
             self.params['offset'].set(value=self.y_f.data.min())
         list_axis=[[self.y[self.dim]],[self.x_f]]
+        initial_parameters['cursors'].append([cursors[0], cursors[1]])
+        initial_parameters['cursors_x_values'].append([self.x_f[0].item(), self.x_f[-1].item()])
         # print('the items',self.params.items())
         for pname, par in self.params.items():
             if not par.vary:  # Check if vary is False
@@ -739,6 +782,9 @@ class fit_panel(QMainWindow):
                 fixed_list.append(pname)
             # print('the paramsnames or',pname, par)
             setattr(self, pname, np.zeros((len(self.axs))))
+            initial_parameters['params'].append(par.value)
+            initial_parameters.update({pname: [par.min,par.value,par.max, par.vary]})
+            
         
         if self.t0_state==False:
             for i in range(len(self.axs)-self.dt):
@@ -784,6 +830,7 @@ class fit_panel(QMainWindow):
                     stderr = out.params[pname].stderr
                     err_array[i] = stderr
                     setattr(self, f"{pname}_err", err_array)
+
             sigma_mean= getattr(self, 'sigma')[0:mid_val-self.dt].mean()
             self.params['sigma'].set(value=sigma_mean, vary=False )
             # print(sigma_mean)
@@ -824,7 +871,8 @@ class fit_panel(QMainWindow):
                 self.fit_results.append(getattr(self, pname))
                 self.fit_results_err.append(getattr(self, f"{pname}_err"))
                 names.append(pname)
-        sg=showgraphs(self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-self.dt], self.fit_results,self.fit_results_err,names,list_axis,list_plot_fits)
+        # print(initial_parameters)       
+        sg=showgraphs(self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-self.dt], self.fit_results,self.fit_results_err,names,list_axis,list_plot_fits,initial_parameters)
         sg.show()
         self.graph_windows.append(sg)
         self.cursor_handler.redraw()
