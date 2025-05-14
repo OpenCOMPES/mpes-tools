@@ -13,12 +13,6 @@ class MovableCursors:
         
         self.cursorlinev1=self.axis[int(len(self.axis)/4)]
         self.cursorlinev2=self.axis[int(3*len(self.axis)/4)]
-        
-        def find_nearest_index(array, value):
-            idx = (np.abs(array - value)).argmin()
-            return idx
-        self.v1_pixel=find_nearest_index(self.axis, self.cursorlinev1)
-        self.v2_pixel=find_nearest_index(self.axis, self.cursorlinev2)
 
         
         self.Line1=self.ax.axvline(x=self.cursorlinev1, color='red', linestyle='--',linewidth=2, label='Vertical Line',picker=10)
@@ -28,7 +22,10 @@ class MovableCursors:
         self.ax.figure.canvas.mpl_connect('pick_event', self.on_pick)
         self.ax.figure.canvas.mpl_connect('motion_notify_event', self.on_motion)
         self.ax.figure.canvas.mpl_connect('button_release_event', self.on_release)
-        
+    def draw(self):
+        self.Line1=self.ax.axvline(x=self.cursorlinev1, color='red', linestyle='--',linewidth=2, label='Vertical Line',picker=10)
+        self.Line2=self.ax.axvline(x=self.cursorlinev2, color='red', linestyle='--',linewidth=2, label='Vertical Line',picker=10)
+        self.ax.figure.canvas.draw()
     def on_pick(self,event):
         
         if event.artist == self.Line1:
@@ -52,10 +49,8 @@ class MovableCursors:
                 return idx
             self.v1_pixel=find_nearest_index(self.axis, self.cursorlinev1)
             self.v2_pixel=find_nearest_index(self.axis, self.cursorlinev2)
-            
-            # print(self.v1_pixel,self.v2_pixel)
+
     def on_release(self,event):
-        # global self.active_cursor
         self.active_cursor = None    
     def remove(self):
         self.cursorlinev1= self.Line1.get_xdata()[0]

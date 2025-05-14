@@ -113,8 +113,10 @@ class fit_panel(QMainWindow):
         self.guess_button = QPushButton("Guess")
         self.guess_button.clicked.connect(self.button_guess_clicked)
         
+        
+        initial={'delta_delay': 0, 'cursors': [236, 325], 'cursors_x_values': [-0.15795348837209033, 0.44986046511628075], 'Fermi_Dirac': True, 'Gaussian_conv': True, 'Offset': True, 'functions': ['lorentzian'], 'params': [1011806.5502853298, -0.05434883720930017, 0.2, 0.019, 20.0, 0.043, 1180.838558974408], 'f0_A': ['-inf', 1011806.5502853298, 'inf', True], 'f0_x0': ['-inf', -0.05434883720930017, 'inf', True], 'f0_gamma': ['-inf', 0.2, 'inf', True], 'mu': ['-inf', 0.019, 'inf', False], 'T': ['-inf', 20.0, 'inf', True], 'sigma': ['-inf', 0.043, 'inf', False], 'offset': ['-inf', 1180.838558974408, 'inf', True]}
         self.load_button = QPushButton("load initial_params")
-        self.load_button.clicked.connect(self.load_button_clicked)
+        
         
         bigger_layout = QVBoxLayout()
         bigger_layout.addLayout(t0_layout)
@@ -255,10 +257,9 @@ class fit_panel(QMainWindow):
         self.function_before_convoluted= zero
         self.update_text_edit_boxes()
         self.i=0
-        
+    
         self.function_list=[]
         self.function_names_list=[]
-        self.cursor_handler = None
         self.FD_state = False
         self.CV_state = False
         self.t0_state = False
@@ -274,24 +275,25 @@ class fit_panel(QMainWindow):
         self.fit_results=[]
         self.fit_results_err=[]
         self.axs=data[data.dims[1]].data
+        # self.data.isel({self.data.dims[1]:slice(t, t+dt+1)}).sum(dim=self.data.dims[1]).plot(ax=self.axis)
+        self.cursor_handler = None
+        self.load_button.clicked.connect(lambda: self.get_fit_results(initial))
         
     def set_cursor_value(self, index): #set manually the values for the cursors in the main graph
         if not self.checkbox0.isChecked() :
             self.checkbox0.setChecked(True)
             if self.cursor_handler is None:
-                self.cursor_handler = MovableCursors(self.axis)
+                self.cursor_handler.draw()
         value = self.cursor_inputs[index].text()
         value=float(value)
         if index ==0: 
             self.cursor_handler.cursorlinev1=value
             base = self.cursor_label[0].text().split(':')[0]
             self.cursor_label[0].setText(f"{base}: {value:.2f}")
-            print('index0')
         elif index ==1:
             self.cursor_handler.cursorlinev2=value
             base = self.cursor_label[1].text().split(':')[0]
             self.cursor_label[1].setText(f"{base}: {value:.2f}")
-            print('index1')
         self.cursor_handler.move()
     def plot_graph(self,t,dt):
         self.axis.clear()
@@ -303,6 +305,7 @@ class fit_panel(QMainWindow):
         if self.checkbox0.isChecked():
             if self.cursor_handler is None:
                 self.cursor_handler = MovableCursors(self.axis)
+            # self.cursor_handler.draw()
             else:
                 self.cursor_handler.redraw()
         self.figure.tight_layout()
@@ -400,9 +403,10 @@ class fit_panel(QMainWindow):
         if state == Qt.Checked:
             if self.cursor_handler is None:
                 self.cursor_handler = MovableCursors(self.axis)
-                self.canvas.draw()
+                # self.canvas.draw()
             else:
                 self.cursor_handler.redraw()
+            # self.cursor_handler.draw()
         else:
             self.cursor_handler.remove()
     
@@ -778,8 +782,13 @@ class fit_panel(QMainWindow):
         
     def fit_all(self):
         initial_parameters= {
+            "delta_delay":self.dt,
             "cursors":[],
             "cursors_x_values":[],
+            "Fermi_Dirac":False,
+            "Gaussian_conv":False,
+            "Offset":False,
+            "functions":[],
             "params":[]}   
         list_plot_fits=[]
         fixed_list=[]
@@ -792,15 +801,20 @@ class fit_panel(QMainWindow):
         
         self.mod= Model(zero)
         j=0
+        # initial_parameters['functions'].append(self.function_list)
         for f in self.function_list:
             self.mod+=Model(f,prefix='f'+str(j)+'_')
             j+=1
+            initial_parameters['functions'].append(f.__func__.__name__)
         if self.FD_state == True:
             self.mod= self.mod* Model(self.fermi_dirac)
+            initial_parameters['Fermi_Dirac']=True
         if self.CV_state == True:
             self.mod = CompositeModel(self.mod, Model(self.centered_kernel), self.convolve)
+            initial_parameters['Gaussian_conv']=True
         if self.offset_state==True:
             self.mod= self.mod+Model(self.offset_function)
+            initial_parameters['Offset']=True
         m1=make_model(self.mod, self.table_widget)
         self.mod=m1.current_model()
         self.params=m1.current_params()
@@ -810,8 +824,10 @@ class fit_panel(QMainWindow):
         if self.offset_state==True:
             self.params['offset'].set(value=self.y_f.data.min())
         list_axis=[[self.y[self.dim]],[self.x_f]]
-        initial_parameters['cursors'].append([cursors[0], cursors[1]])
-        initial_parameters['cursors_x_values'].append([self.x_f[0].item(), self.x_f[-1].item()])
+        initial_parameters['cursors'].append(cursors[0])
+        initial_parameters['cursors'].append(cursors[1])
+        initial_parameters['cursors_x_values'].append(self.x_f[0].item())
+        initial_parameters['cursors_x_values'].append(self.x_f[-1].item())
         # print('the items',self.params.items())
         for pname, par in self.params.items():
             if not par.vary:  # Check if vary is False
@@ -820,8 +836,12 @@ class fit_panel(QMainWindow):
             # print('the paramsnames or',pname, par)
             setattr(self, pname, np.zeros((len(self.axs))))
             initial_parameters['params'].append(par.value)
-            initial_parameters.update({pname: [par.min,par.value,par.max, par.vary]})
-            
+            import math
+            if math.isinf(par.min):
+                min_value='-inf'    
+            if math.isinf(par.max):
+                max_value='inf'      
+            initial_parameters.update({pname: [min_value,par.value,max_value,par.vary]})
         
         if self.t0_state==False:
             for i in range(len(self.axs)-self.dt):
@@ -913,7 +933,63 @@ class fit_panel(QMainWindow):
         sg.show()
         self.graph_windows.append(sg)
         self.cursor_handler.redraw()
-
+    def get_fit_results(self,initial_parameters):
+        list_plot_fits=[]
+        fixed_list=[]
+        names=[]
+        fit_results=[]
+        fit_results_err=[]
+        def zero(x):
+            return 0
+        axs=self.data[self.data.dims[1]].data
+        dt=initial_parameters['delta_delay']
+        cursors=initial_parameters['cursors']
+        mod=Model(zero)
+        for i,f in enumerate(initial_parameters['functions']):
+            mod+=Model(getattr(self, f),prefix='f'+str(i)+'_')
+        if  initial_parameters['Fermi_Dirac']:
+            mod=mod*Model(self.fermi_dirac)
+        if initial_parameters['Gaussian_conv']:
+            mod = CompositeModel(mod, Model(self.centered_kernel), self.convolve)
+        if initial_parameters['Offset']:
+            mod= mod+Model(self.offset_function)
+        params=mod.make_params()
+        for pname, par in params.items():
+            params[pname].set(min=float(initial_parameters[pname][0]))
+            params[pname].set(value=initial_parameters[pname][1])
+            params[pname].set(max=float(initial_parameters[pname][2]))
+            params[pname].vary=initial_parameters[pname][3]
+        for pname, par in params.items():
+            setattr(self, pname, np.zeros(len(axs)))
+        for i in range(len(axs)-dt):
+            y=self.data.isel({self.data.dims[1]:slice(i, i+dt+1)}).sum(dim=self.data.dims[1])
+            y_f=y.isel({self.dim:slice(cursors[0], cursors[1])})
+            x_f=y_f[self.dim]
+            list_axis=[[y[self.dim]],[x_f]]        
+            out = mod.fit(y_f, params, x=x_f)
+            list_plot_fits.append([[y],[out.best_fit]])
+            for pname, par in params.items():
+                array=getattr(self, pname)
+                array[i]=out.best_values[pname]
+                setattr(self, pname,array)
+                
+                err_array = getattr(self, f"{pname}_err",np.zeros_like(array))
+                stderr = out.params[pname].stderr
+                err_array[i] = stderr
+                setattr(self, f"{pname}_err", err_array)
+        if dt>0:
+            for pname, par in params.items():
+                fit_results.append(getattr(self, pname)[:-dt])
+                fit_results_err.append(getattr(self, f"{pname}_err")[:-dt]) 
+                names.append(pname)
+        else:
+            for pname, par in params.items():
+                fit_results.append(getattr(self, pname))
+                fit_results_err.append(getattr(self, f"{pname}_err"))
+                names.append(pname)
+        sg=showgraphs(self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-dt],fit_results,fit_results_err,names,list_axis,list_plot_fits,initial_parameters)
+        sg.show()
+        self.graph_windows.append(sg) 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = fit_panel()
