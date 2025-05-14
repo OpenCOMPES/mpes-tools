@@ -90,14 +90,14 @@ class fit_panel(QMainWindow):
         self.label2 = QLabel("Δ"+f"{data.dims[1]}: {dt}")
 
         # Create two checkboxes
-        self.checkbox1 = QCheckBox("Multiply with Fermi Dirac")
-        self.checkbox1.stateChanged.connect(self.checkbox1_changed)
+        self.checkbox_FD = QCheckBox("Multiply with Fermi Dirac")
+        self.checkbox_FD.stateChanged.connect(self.checkbox_FD_changed)
 
-        self.checkbox2 = QCheckBox("Convolve with a Gaussian")
-        self.checkbox2.stateChanged.connect(self.checkbox2_changed)
+        self.checkbox_Gauss = QCheckBox("Convolve with a Gaussian")
+        self.checkbox_Gauss.stateChanged.connect(self.checkbox_Gauss_changed)
         
-        self.checkbox3 = QCheckBox("add background offset")
-        self.checkbox3.stateChanged.connect(self.checkbox3_changed)
+        self.checkbox_offset = QCheckBox("add background offset")
+        self.checkbox_offset.stateChanged.connect(self.checkbox_offset_changed)
         
         t0_layout = QHBoxLayout()
         
@@ -170,9 +170,28 @@ class fit_panel(QMainWindow):
         left_buttons.addWidget(self.fitall_button)
         
         left_sublayout.addWidget(self.list_widget)
-        left_sublayout.addLayout(left_buttons) 
-
+        left_sublayout.addLayout(left_buttons)
+        
+        cursor_layout = QHBoxLayout()
+        self.cursor_label=[]
+        self.cursor_inputs = []
+        cursors_names=['cursor1', 'cursor2']
+        for i in range(2):
+            sub_layout = QVBoxLayout()
+            # label = QLabel(f"Cursor {i+1}:")
+            label=QLabel(cursors_names[i])
+            input_field = QLineEdit()
+            input_field.setPlaceholderText("Value")
+            input_field.setFixedWidth(80)
+            input_field.editingFinished.connect(lambda i=i: self.set_cursor_value(i))
+            self.cursor_inputs.append(input_field)
+            self.cursor_label.append(label)
+            sub_layout.addWidget(label)
+            sub_layout.addWidget(input_field)
+            cursor_layout.addLayout(sub_layout)
+            
         # Add widgets to the left layout
+        left_layout.addLayout(cursor_layout)
         left_layout.addWidget(self.canvas)
         left_layout.addWidget(self.checkbox0)
         left_layout.addWidget(self.slider)
@@ -215,9 +234,9 @@ class fit_panel(QMainWindow):
         checkboxes=QVBoxLayout()
         top_lay = QHBoxLayout()
         above_table=QVBoxLayout()
-        checkboxes.addWidget(self.checkbox1)
-        checkboxes.addWidget(self.checkbox2)
-        checkboxes.addWidget(self.checkbox3)
+        checkboxes.addWidget(self.checkbox_FD)
+        checkboxes.addWidget(self.checkbox_Gauss)
+        checkboxes.addWidget(self.checkbox_offset)
         top_lay.addWidget(self.text_equation)
         top_lay.addLayout(checkboxes)
         above_table.addLayout(top_lay)
@@ -255,7 +274,25 @@ class fit_panel(QMainWindow):
         self.fit_results=[]
         self.fit_results_err=[]
         self.axs=data[data.dims[1]].data
-
+        
+    def set_cursor_value(self, index): #set manually the values for the cursors in the main graph
+        if not self.checkbox0.isChecked() :
+            self.checkbox0.setChecked(True)
+            if self.cursor_handler is None:
+                self.cursor_handler = MovableCursors(self.axis)
+        value = self.cursor_inputs[index].text()
+        value=float(value)
+        if index ==0: 
+            self.cursor_handler.cursorlinev1=value
+            base = self.cursor_label[0].text().split(':')[0]
+            self.cursor_label[0].setText(f"{base}: {value:.2f}")
+            print('index0')
+        elif index ==1:
+            self.cursor_handler.cursorlinev2=value
+            base = self.cursor_label[1].text().split(':')[0]
+            self.cursor_label[1].setText(f"{base}: {value:.2f}")
+            print('index1')
+        self.cursor_handler.move()
     def plot_graph(self,t,dt):
         self.axis.clear()
 
@@ -369,7 +406,7 @@ class fit_panel(QMainWindow):
         else:
             self.cursor_handler.remove()
     
-    def checkbox1_changed(self, state):
+    def checkbox_FD_changed(self, state):
         if self.CV_state== True:
             pos=2
         else:
@@ -419,7 +456,7 @@ class fit_panel(QMainWindow):
             self.table_widget.removeRow(pos)
             self.table_widget.removeRow(pos)
             
-    def checkbox2_changed(self, state):
+    def checkbox_Gauss_changed(self, state):
         if state == Qt.Checked:
             self.CV_state = True
             
@@ -454,7 +491,7 @@ class fit_panel(QMainWindow):
             
             self.table_widget.removeRow(0)
             self.table_widget.removeRow(0)
-    def checkbox3_changed(self, state):
+    def checkbox_offset_changed(self, state):
         if state == Qt.Checked:
             self.offset_state=True
         else:
