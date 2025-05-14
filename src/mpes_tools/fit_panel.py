@@ -14,7 +14,7 @@ import inspect
 from mpes_tools.movable_vertical_cursors_graph import MovableCursors
 from mpes_tools.make_model import make_model
 from mpes_tools.graphs import showgraphs
-
+import ast
 
 
 
@@ -114,7 +114,7 @@ class fit_panel(QMainWindow):
         self.guess_button.clicked.connect(self.button_guess_clicked)
         
         
-        initial={'delta_delay': 0, 'cursors': [236, 325], 'cursors_x_values': [-0.15795348837209033, 0.44986046511628075], 'Fermi_Dirac': True, 'Gaussian_conv': True, 'Offset': True, 'functions': ['lorentzian'], 'params': [1011806.5502853298, -0.05434883720930017, 0.2, 0.019, 20.0, 0.043, 1180.838558974408], 'f0_A': ['-inf', 1011806.5502853298, 'inf', True], 'f0_x0': ['-inf', -0.05434883720930017, 'inf', True], 'f0_gamma': ['-inf', 0.2, 'inf', True], 'mu': ['-inf', 0.019, 'inf', False], 'T': ['-inf', 20.0, 'inf', True], 'sigma': ['-inf', 0.043, 'inf', False], 'offset': ['-inf', 1180.838558974408, 'inf', True]}
+        # initial={'delta_delay': 0, 'cursors': [236, 325], 'cursors_x_values': [-0.15795348837209033, 0.44986046511628075], 'Fermi_Dirac': True, 'Gaussian_conv': True, 'Offset': True, 'functions': ['lorentzian'], 'params': [1011806.5502853298, -0.05434883720930017, 0.2, 0.019, 20.0, 0.043, 1180.838558974408], 'f0_A': ['-inf', 1011806.5502853298, 'inf', True], 'f0_x0': ['-inf', -0.05434883720930017, 'inf', True], 'f0_gamma': ['-inf', 0.2, 'inf', True], 'mu': ['-inf', 0.019, 'inf', False], 'T': ['-inf', 20.0, 'inf', True], 'sigma': ['-inf', 0.043, 'inf', False], 'offset': ['-inf', 1180.838558974408, 'inf', True]}
         self.load_button = QPushButton("load initial_params")
         
         
@@ -277,7 +277,7 @@ class fit_panel(QMainWindow):
         self.axs=data[data.dims[1]].data
         # self.data.isel({self.data.dims[1]:slice(t, t+dt+1)}).sum(dim=self.data.dims[1]).plot(ax=self.axis)
         self.cursor_handler = None
-        self.load_button.clicked.connect(lambda: self.get_fit_results(initial))
+        self.load_button.clicked.connect(self.load_button_clicked)
         
     def set_cursor_value(self, index): #set manually the values for the cursors in the main graph
         if not self.checkbox0.isChecked() :
@@ -549,10 +549,9 @@ class fit_panel(QMainWindow):
         return None  # Return None if the dialog was canceled
 
     def load_button_clicked(self):
-        user_input = self.get_input_from_user()  # Call the function to get input
-        if user_input:
-            print("User input:", user_input)
-            
+        initial_parameters = ast.literal_eval(self.get_input_from_user())  # Call the function to get input
+        if initial_parameters:
+            self.get_fit_results(initial_parameters)
         else:
             print("Nothing provided.")
            
