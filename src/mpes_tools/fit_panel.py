@@ -19,7 +19,7 @@ import ast
 
 
 class fit_panel(QMainWindow):
-    def __init__(self,data,t,dt,panel):
+    def __init__(self,data,panel,t=0,dt=0):
         super().__init__()
 
         self.setWindowTitle("Main Window")

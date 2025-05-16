@@ -131,6 +131,7 @@ class Gui_3d(QMainWindow):
             self.t=0
             self.dt=0
         # define the cut for the spectra of the main graph
+        print(self.data.dims)
         self.data2D_plot=self.data.sel({self.data.dims[2]:slice(self.axis[2][self.t], self.axis[2][self.t + self.dt])}).mean(dim=self.data.dims[2])
         
         #Initialize the relevant prameters
@@ -326,62 +327,62 @@ class Gui_3d(QMainWindow):
             action1 = menu.addAction("yellow_EDC")
             action2 = menu.addAction("green_EDC")
             action3 = menu.addAction("integrated_EDC")
+            action4 = menu.addAction("integrated_EDC_timeless")
     
             action = menu.exec_(QCursor.pos())
     
             if action == action1:
-                print("data.sel({data.dims[2]: slice(" +
-              f"{self.axis[2][self.slider1.value()]:.2f}, " +
-              f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
-              ")}).mean(dim=data.dims[2]).sel({data.dims[0]: " +
+                print("[data.sel({data.dims[0]: " +
               f"{self.dot1.center[1]:.2f}" +
-              "}, method='nearest')  # Yellow EDC")
+              "}, method='nearest'),t="+f"{self.axis[2][self.slider1.value()]}"+",t+dt="+f"{self.axis[2][self.slider1.value() + self.slider2.value() ]}"+"]   # Yellow EDC")
             elif action == action2: 
-                print("data.sel({data.dims[2]: slice(" +
-              f"{self.axis[2][self.slider1.value()]:.2f}, " +
-              f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
-              ")}).mean(dim=data.dims[2]).sel({data.dims[0]: " +
+                print("[data.sel({data.dims[0]: " +
               f"{self.dot2.center[1]:.2f}" +
-              "}, method='nearest')  # Green EDC")
+              "}, method='nearest'),t="+f"{self.axis[2][self.slider1.value()]}"+",t+dt="+f"{self.axis[2][self.slider1.value() + self.slider2.value()]}"+"]    # Green EDC")
             elif action == action3: 
-                print("data.sel({data.dims[2]: slice(" +
+                print("[data.sel({data.dims[0]: slice(" +
+              f"{min(self.dot1.center[1], self.dot2.center[1]):.2f}, " +
+              f"{max(self.dot1.center[1], self.dot2.center[1]):.2f}" +
+              ")}).mean(dim=data.dims[0]),t="+f"{self.axis[2][self.slider1.value()]}"+",t+dt="+f"{self.axis[2][self.slider1.value() + self.slider2.value() ]}"+"]  # Integrated EDC")
+            elif action == action4: 
+                print("[data.sel({data.dims[2]: slice(" +
               f"{self.axis[2][self.slider1.value()]:.2f}, " +
               f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
               ")}).mean(dim=data.dims[2]).sel({data.dims[0]: slice(" +
               f"{min(self.dot1.center[1], self.dot2.center[1]):.2f}, " +
               f"{max(self.dot1.center[1], self.dot2.center[1]):.2f}" +
-              ")}).mean(dim=data.dims[0])  # Integrated EDC")
+              ")}).mean(dim=data.dims[0]),t="+f"{self.axis[2][self.slider1.value()]}"+",t+dt="+f"{self.axis[2][self.slider1.value() + self.slider2.value()]}"+"]   # Integrated EDC")
         elif ax==self.axes[1]:
             menu = QMenu(canvas)
             action1 = menu.addAction("yellow_MDC")
             action2 = menu.addAction("green_MDC")
             action3 = menu.addAction("integrated_MDC")
+            action4 = menu.addAction("integrated_MDC_timeless")
     
             action = menu.exec_(QCursor.pos())
     
             if action == action1:
-                print("data.sel({data.dims[2]: slice(" +
-              f"{self.axis[2][self.slider1.value()]:.2f}, " +
-              f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
-              ")}).mean(dim=data.dims[2]).sel({data.dims[1]: " +
+                print("[data.sel({data.dims[1]: " +
               f"{self.dot1.center[0]:.2f}" +
-              "}, method='nearest')  # Yellow MDC")
+              "}, method='nearest'),t="+f"{self.axis[2][self.slider1.value()]}"+",t+dt="+f"{self.axis[2][self.slider1.value() + self.slider2.value() ]}"+"]   # Yellow MDC")
             elif action == action2: 
-                print("data.sel({data.dims[2]: slice(" +
-              f"{self.axis[2][self.slider1.value()]:.2f}, " +
-              f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
-              ")}).mean(dim=data.dims[2]).sel({data.dims[1]: " +
+                print("[data.sel({data.dims[1]: " +
               f"{self.dot2.center[0]:.2f}" +
-              "}, method='nearest')  # Green MDC")
+              "}, method='nearest'),t="+f"{self.axis[2][self.slider1.value()]}"+",t+dt="+f"{self.axis[2][self.slider1.value() + self.slider2.value() ]}"+"]    # Green MDC")
 
             elif action == action3: 
-                print("data.sel({data.dims[2]: slice(" +
+                print("[data.sel({data.dims[1]: slice(" +
+              f"{min(self.dot1.center[0], self.dot2.center[0]):.2f}, " +
+              f"{max(self.dot1.center[0], self.dot2.center[0]):.2f}" +
+              ")}).mean(dim=data.dims[1]),t="+f"{self.axis[2][self.slider1.value()]}"+",t+dt="+f"{self.axis[2][self.slider1.value() + self.slider2.value()]}"+"]    # Integrated MDC")
+            elif action == action4: 
+                print("[data.sel({data.dims[2]: slice(" +
               f"{self.axis[2][self.slider1.value()]:.2f}, " +
               f"{self.axis[2][self.slider1.value() + self.slider2.value() + 1]:.2f}" +
               ")}).mean(dim=data.dims[2]).sel({data.dims[1]: slice(" +
               f"{min(self.dot1.center[0], self.dot2.center[0]):.2f}, " +
               f"{max(self.dot1.center[0], self.dot2.center[0]):.2f}" +
-              ")}).mean(dim=data.dims[1])  # Integrated MDC")
+              ")}).mean(dim=data.dims[1]),t="+f"{self.axis[2][self.slider1.value()]}"+",t+dt="+f"{self.axis[2][self.slider1.value() + self.slider2.value()]}"+"]    # Integrated MDC")
         elif ax==self.axes[3]:
             menu = QMenu(canvas)
             action1 = menu.addAction("intensity box")
@@ -451,14 +452,14 @@ class Gui_3d(QMainWindow):
         x_min = min(self.dot2.center[1], self.dot1.center[1])
         x_max = max(self.dot2.center[1], self.dot1.center[1])
         data_fit=self.data.sel({self.data.dims[0]:slice(x_min, x_max)}).mean(dim=self.data.dims[0])
-        graph_window=fit_panel(data_fit, self.t, self.dt, self.data.dims[1])
+        graph_window=fit_panel(data_fit, self.data.dims[1],self.t, self.dt)
         graph_window.show()
         self.graph_windows.append(graph_window)
     def fit_momentum_panel(self,event): # open up the fit panel for the MDC
         x_min = min(self.dot1.center[0], self.dot2.center[0])
         x_max = max(self.dot1.center[0], self.dot2.center[0])
         data_fit=self.data.sel({self.data.dims[1]:slice(x_min, x_max)}).mean(dim=self.data.dims[1])
-        graph_window=fit_panel(data_fit, self.t, self.dt, self.data.dims[0])
+        graph_window=fit_panel(data_fit, self.data.dims[0], self.t, self.dt)
         graph_window.show()
         self.graph_windows.append(graph_window)
     def fit_box_panel(self,event): # open up the fit panel for the intensity box
