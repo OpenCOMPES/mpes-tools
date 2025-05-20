@@ -77,9 +77,9 @@ class AxisEditor:
                 else:
                     self.activation_y=False
                     if self.is2d is not None:
-                        self.ax.set_xlim(self.original_y)
+                        self.ax.set_ylim(self.original_y)
                     else:
-                        self.ax.set_xlim(self.get_limits(self.ax)[1])
+                        self.ax.set_ylim(self.get_limits(self.ax)[1])
 
                 self.canvas.draw_idle()
     def activation_x(self):
