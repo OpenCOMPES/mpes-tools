@@ -176,7 +176,7 @@ class Gui_3d(QMainWindow):
         
         # plot the main graph
         self.im = self.data2D_plot.plot(ax=self.axes[0], cmap='terrain', add_colorbar=False)
-        self.axes[0].figure.colorbar(self.im, ax=self.axes[0])
+        # self.axes[0].figure.colorbar(self.im, ax=self.axes[0])
         self.colorscale_2dplot=colorscale_slider(canvas_layout, self.im, self.axes[0].figure.canvas)
         
         # define the initial positions of the cursors in the main graph

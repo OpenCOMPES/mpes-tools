@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel,QHBoxLayout,QGridLayout,QLineEdit,QCheckBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel,QHBoxLayout,QGridLayout,QLineEdit,QCheckBox,QInputDialog
 from superqt import QRangeSlider
 from PyQt5.QtCore import Qt
 import numpy as np
@@ -12,7 +12,9 @@ class colorscale_slider(QWidget):
         self.case=False
         self.im = imshow_artist
         self.canvas = canvas
-        self.colorbar = None  # Optional: set this externally if you want to update a colorbar
+        self.ax = canvas.figure.axes[0]
+        self.colorbar = self.canvas.figure.colorbar(self.im, ax=self.ax)
+        
         
         if limits is None:
             self.data = imshow_artist.get_array().data
@@ -71,6 +73,18 @@ class colorscale_slider(QWidget):
             layout.addWidget(h_container,0,0)
         else:
             layout.insertWidget(0, h_container)
+        self.canvas.mpl_connect("button_press_event", self.on_double_click)
+
+    def on_double_click(self, event):
+        if event.dblclick and self.colorbar.ax == event.inaxes:
+            # Only trigger if colorbar is double-clicked
+            cmaps = sorted(m for m in plt.colormaps() if not m.endswith("_r"))
+            cmap, ok = QInputDialog.getItem(
+                self, "Choose Colormap", "Colormap:", cmaps, editable=False
+            )
+            if ok:
+                self.im.set_cmap(cmap)
+                self.canvas.draw()
     def autoscale(self,state):
         if self.checkbox_autoscale.isChecked():
             self.data = self.im.get_array().data
