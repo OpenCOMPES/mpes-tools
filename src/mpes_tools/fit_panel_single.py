@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtGui import QBrush, QColor
-from PyQt5.QtWidgets import QTextEdit, QLineEdit,QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QAction, QCheckBox, QPushButton, QListWidget, QTableWidget, QTableWidgetItem, QTableWidget, QCheckBox, QSplitter
+from PyQt5.QtWidgets import QDialog,QTextEdit, QLineEdit,QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QSlider, QLabel, QAction, QCheckBox, QPushButton,QMenu,QListWidget, QTableWidget, QTableWidgetItem, QTableWidget, QCheckBox, QSplitter
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QTableWidgetItem, QHBoxLayout, QCheckBox, QWidget
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -14,7 +14,10 @@ import inspect
 from mpes_tools.movable_vertical_cursors_graph import MovableCursors
 from mpes_tools.make_model import make_model
 from mpes_tools.graphs import showgraphs
-
+from mpes_tools.right_click_handler import RightClickHandler
+from PyQt5.QtGui import QCursor
+import ast
+import xarray as xr
 
 
 
@@ -29,12 +32,18 @@ class fit_panel_single(QMainWindow):
         menu_bar = self.menuBar()
 
         # Create a 'View' menu
-        view_menu = menu_bar.addMenu("View")
+        exctract_menu = menu_bar.addMenu("extract")
+        
+        initial_par_action = QAction('initial_parameters',self)
+        initial_par_action.triggered.connect(self.extract_initial_par)
+        exctract_menu.addAction(initial_par_action)
+        
+        # view_menu = menu_bar.addMenu("View")
 
-        # Create actions for showing and hiding the graph window
-        clear_graph_action = QAction("Show Graph", self)
-        clear_graph_action.triggered.connect(self.clear_graph_window)
-        view_menu.addAction(clear_graph_action)
+        # # Create actions for showing and hiding the graph window
+        # clear_graph_action = QAction("Show Graph", self)
+        # clear_graph_action.triggered.connect(self.clear_graph_window)
+        # view_menu.addAction(clear_graph_action)
 
         # Store references to graph windows to prevent garbage collection
         self.graph_windows = []
@@ -86,8 +95,11 @@ class fit_panel_single(QMainWindow):
         self.guess_button = QPushButton("Guess")
         self.guess_button.clicked.connect(self.button_guess_clicked)
         
+        self.load_button = QPushButton("load initial_params")
+        
         bigger_layout = QVBoxLayout()
         bigger_layout.addWidget(self.guess_button)
+        bigger_layout.addWidget(self.load_button)
         # Create a QListWidget
         self.list_widget = QListWidget()
         self.list_widget.addItems(["linear","Lorentz", "Gauss", "sinusoid","constant","jump"])
@@ -192,16 +204,85 @@ class fit_panel_single(QMainWindow):
         self.data=data
         self.y=data
         self.dim=data.dims[0]
+        self.result_fit=[]
+        self.result_fit_plot=[]
+        self.result_fit_err=[]
+        self.x_f=[]
         self.plot_graph()
+        self.checkbox0.setChecked(True)
+        self.checkbox0_changed
+        
+        self.handler_list=[]
+        handler = RightClickHandler(self.canvas, self.axis,self.show_pupup_window)
+        self.canvas.mpl_connect("button_press_event", handler.on_right_click)
+        self.handler_list.append(handler)
+        
+        self.load_button.clicked.connect(self.load_button_clicked)
+        
+    
+    def load_button_clicked(self):
+        initial_parameters = ast.literal_eval(self.get_input_from_user())  # Call the function to get input
+        if initial_parameters:
+            self.get_fit_results(initial_parameters)
+        else:
+            print("Nothing provided.")
+    def get_input_from_user(self,parent=None):
+        # Create a QDialog instance
+        dialog = QDialog(parent)
+        
+        # Set dialog properties
+        dialog.setWindowTitle("Enter text")
+        dialog.resize(800, 300)  # Set the size of the dialog
+        
+        # Create widgets
+        label = QLabel("Your input:", dialog)
+        input_field = QTextEdit(dialog)
+        ok_button = QPushButton("OK", dialog)
+        
+        # Set up the layout
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(label)
+        layout.addWidget(input_field)
+        layout.addWidget(ok_button)
+        
+        # Connect OK button to accept the input
+        ok_button.clicked.connect(dialog.accept)
+        
+        # Execute the dialog and get the user input if accepted
+        if dialog.exec_() == QDialog.Accepted:
+            return input_field.toPlainText()  # Return the entered text
+        
+        return None  # Return None if the dialog was canceled
+           
+    def extract_initial_par(self):
+        print(self.initial_parameters) 
+    def show_pupup_window(self,canvas,ax):
+            if ax == self.axis:
+                data = self.result_fit_plot.tolist()
+                coords = {self.dim:self.x_f.values.tolist()}
+                dims = str(self.dim)
+                name = 'fit'
+                menu = QMenu(canvas)
+                action1 = menu.addAction('fit')
+                action = menu.exec_(QCursor.pos())
+        
+                if action == action1:
+                    print(f'''
+import xarray as xr
+import numpy as np
 
+data_fit = xr.DataArray(
+    data=np.array({data}),
+    dims={dims},
+    coords={coords},
+    name="{name}"
+)
+fit_results= {self.result_fit},
+
+fit_errors= {self.result_fit_err}
+''')
     def plot_graph(self):
-        self.axis.clear()
         self.y.plot(ax=self.axis)
-        if self.checkbox0.isChecked():
-            if self.cursor_handler is None:
-                self.cursor_handler = MovableCursors(self.axis)
-            else:
-                self.cursor_handler.redraw()
         self.figure.tight_layout()
         self.canvas.draw()
     def update_text_edit_boxes(self):
@@ -236,7 +317,7 @@ class fit_panel_single(QMainWindow):
         o[:imid] = Amp
         return o
     def sinusoid(self,x,A,omega,phi):
-        return  A* np.sin(omega*x+phi)
+        return  A* np.sin(2*np.pi*omega*x+phi)
 
     def centered_kernel(self,x, sigma):
         mean = x.mean()
@@ -277,6 +358,11 @@ class fit_panel_single(QMainWindow):
 
     def clear_graph_window(self):
         self.axis.clear()
+        if self.checkbox0.isChecked():
+            if self.cursor_handler is None:
+                self.cursor_handler = MovableCursors(self.axis)
+            else:
+                self.cursor_handler.redraw()
         self.plot_graph()
         
     def checkbox0_changed(self, state):
@@ -284,6 +370,7 @@ class fit_panel_single(QMainWindow):
             if self.cursor_handler is None:
                 self.cursor_handler = MovableCursors(self.axis)
                 self.canvas.draw()
+                print(self.cursor_handler)
             else:
                 self.cursor_handler.redraw()
         else:
@@ -532,7 +619,14 @@ class fit_panel_single(QMainWindow):
         self.mod=m1.current_model()
         self.params=m1.current_params()
     def fit(self):
-        
+        self.initial_parameters= {
+            "cursors":[],
+            "cursors_x_values":[],
+            "Fermi_Dirac":False,
+            "Gaussian_conv":False,
+            "Offset":False,
+            "functions":[],
+            "params":[]} 
         def zero(x):
             return 0
         self.mod= Model(zero)
@@ -540,13 +634,17 @@ class fit_panel_single(QMainWindow):
         j=0
         for f in self.function_list:
             self.mod+=Model(f,prefix='f'+str(j)+'_')
+            self.initial_parameters['functions'].append(f.__func__.__name__)
             j+=1
         if self.FD_state == True:
             self.mod= self.mod* Model(self.fermi_dirac)
+            self.initial_parameters['Fermi_Dirac']=True
         if self.CV_state == True:
             self.mod = CompositeModel(self.mod, Model(self.centered_kernel), self.convolve)
+            self.initial_parameters['Gaussian_conv']=True
         if self.offset_state==True:
             self.mod= self.mod+Model(self.offset_function)
+            self.initial_parameters['Offset']=True
         m1=make_model(self.mod, self.table_widget)
         self.mod=m1.current_model()
         self.params=m1.current_params()
@@ -555,13 +653,61 @@ class fit_panel_single(QMainWindow):
         if self.offset_state==True:
             self.params['offset'].set(value=self.y_f.data.min())
         # print(self.params)
+        self.initial_parameters['cursors'].append(cursors[0])
+        self.initial_parameters['cursors'].append(cursors[1])
+        self.initial_parameters['cursors_x_values'].append(self.x_f[0].item())
+        self.initial_parameters['cursors_x_values'].append(self.x_f[-1].item())
         out = self.mod.fit(self.y_f, self.params, x=self.x_f)
         print(out.fit_report(min_correl=0.25))
         self.axis.plot(self.x_f,out.best_fit,color='red',label='fit')
         self.figure.tight_layout()
         self.canvas.draw()
+        self.result_fit_plot = out.best_fit
+        self.result_fit={name: param.value for name, param in out.params.items()}
+        self.result_fit_err={name: param.stderr for name, param in out.params.items()}
+        for pname, par in self.params.items():
+            print(pname)
+            self.initial_parameters['params'].append(par.value)
+            import math
+            if math.isinf(par.min):
+                min_value='-inf'    
+            if math.isinf(par.max):
+                max_value='inf'      
+            self.initial_parameters.update({pname: [min_value,par.value,max_value,par.vary]})
+    def get_fit_results(self,initial_parameters):
+        def zero(x):
+            return 0
+        cursors=initial_parameters['cursors']
+        mod=Model(zero)
+        for i,f in enumerate(initial_parameters['functions']):
+            mod+=Model(getattr(self, f),prefix='f'+str(i)+'_')
+        if  initial_parameters['Fermi_Dirac']:
+            mod=mod*Model(self.fermi_dirac)
+        if initial_parameters['Gaussian_conv']:
+            mod = CompositeModel(mod, Model(self.centered_kernel), self.convolve)
+        if initial_parameters['Offset']:
+            mod= mod+Model(self.offset_function)
+        params=mod.make_params()
         
-    
+        for pname, par in params.items():
+            params[pname].set(min=float(initial_parameters[pname][0]))
+            params[pname].set(value=initial_parameters[pname][1])
+            params[pname].set(max=float(initial_parameters[pname][2]))
+            params[pname].vary=initial_parameters[pname][3]
+        y_f=self.y.isel({self.dim:slice(cursors[0], cursors[1])})
+        x_f=y_f[self.dim]
+        if initial_parameters['Offset']:
+            params['offset'].set(value=self.y_f.data.min())
+        out =mod.fit(y_f, params, x=x_f)
+        print(out.fit_report(min_correl=0.25))
+        self.axis.plot(x_f,out.best_fit,color='red',label='fit')
+        self.x_f=x_f
+        self.result_fit_plot = out.best_fit
+        self.result_fit={name: param.value for name, param in out.params.items()}
+        self.result_fit_err={name: param.stderr for name, param in out.params.items()}
+        self.figure.tight_layout()
+        self.canvas.draw()
+        self.cursor_handler.redraw()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

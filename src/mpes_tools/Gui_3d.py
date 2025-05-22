@@ -23,10 +23,12 @@ from mpes_tools.axis_editor import AxisEditor
 #graphic window showing a 2d map controllable with sliders for the third dimension, with cursors showing cuts along the x direction for MDC and y direction for EDC
 # Two vertical cursors and two horizontal cursors are defined in the main graph with each same color for the cursors being horizontal and vertical intercept each other in a dot so one can move either each cursor or the dot itself which will move both cursors. 
 class Gui_3d(QMainWindow):  
-    def __init__(self,data_array: xr.DataArray,t=None,dt=None):
+    def __init__(self,data_array: xr.DataArray,t=None,dt=None,name=None):
         super().__init__()
-
+        
         self.setWindowTitle("Graph Window")
+        if name:
+            self.setWindowTitle(name)
         self.setGeometry(100, 100, 1200, 1000)
 
         # Create a main widget for the graph
@@ -318,9 +320,9 @@ class Gui_3d(QMainWindow):
             action = menu.exec_(QCursor.pos())
     
             if action == action1:
-                print('data2D_plot=data.sel({data.dims[2]:slice('+f"{self.axis[2][self.slider1.value()]:.2f}"+', '+f"{self.axis[2][self.slider1.value()+self.slider2.value()+1]:.2f}"+')}).mean(dim=data.dims[2])' )
+                print('data2D_plot=data.sel({data.dims[2]:slice('+f"{self.axis[2][self.slider1.value()]}"+', '+f"{self.axis[2][self.slider1.value()+self.slider2.value()]}"+')}).mean(dim=data.dims[2])' )
             elif action == action2:
-                print('yellow_vertical,yellow_horizontal,green_vertical,green_horizontal= '+ f"{self.dot1.center[0]:.2f} ,{self.dot1.center[1]:.2f},{self.dot2.center[0]:.2f},{self.dot2.center[1]:.2f}")
+                print('yellow_vertical,yellow_horizontal,green_vertical,green_horizontal= '+ f"{self.dot1.center[0]} ,{self.dot1.center[1]},{self.dot2.center[0]},{self.dot2.center[1]}")
 
         elif ax==self.axes[2]:
             menu = QMenu(canvas)
@@ -516,8 +518,9 @@ class Gui_3d(QMainWindow):
         self.integrated_mdc.plot(ax=self.axes[1])
 
     def box(self): # generate the intensity graph between the four cursors in the main graph
-        xlim = self.axes[3].get_xlim()
-        ylim = self.axes[3].get_ylim()
+        if [self.axes[3].get_xlim(),self.axes[3].get_ylim()] != [0,1]:
+            xlim = self.axes[3].get_xlim()
+            ylim = self.axes[3].get_ylim()
         self.axes[3].clear()
         
         x0,y0=self.dot1.center
