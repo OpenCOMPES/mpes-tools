@@ -15,7 +15,7 @@ from mpes_tools.movable_vertical_cursors_graph import MovableCursors
 from mpes_tools.make_model import make_model
 from mpes_tools.graphs import showgraphs
 import ast
-
+from mpes_tools.axis_editor import AxisEditor
 
 
 class fit_panel(QMainWindow):
@@ -257,7 +257,8 @@ class fit_panel(QMainWindow):
         self.function_before_convoluted= zero
         self.update_text_edit_boxes()
         self.i=0
-    
+        
+        self.editor_fit=AxisEditor(self.canvas)
         self.function_list=[]
         self.function_names_list=[]
         self.FD_state = False
@@ -296,12 +297,16 @@ class fit_panel(QMainWindow):
             self.cursor_label[1].setText(f"{base}: {value:.2f}")
         self.cursor_handler.move()
     def plot_graph(self,t,dt):
+        xlim = self.axis.get_xlim()
+        ylim = self.axis.get_ylim()
         self.axis.clear()
-
         if self.panel != 'box':
             self.y=self.data.isel({self.data.dims[1]:slice(t, t+dt+1)}).sum(dim=self.data.dims[1])
-        
         self.y.plot(ax=self.axis)
+        if self.editor_fit.activation_x:
+            self.axis.set_xlim(xlim)
+        if self.editor_fit.activation_y:
+            self.axis.set_ylim(ylim)
         if self.checkbox0.isChecked():
             if self.cursor_handler is None:
                 self.cursor_handler = MovableCursors(self.axis)

@@ -312,11 +312,6 @@ data.loc[{{
         data_avg=self.data_array.isel({self.axes[1]:slice(0,0), self.axes[0]:slice(0,0)}).mean(dim=(self.axes[1], self.axes[0]))
         self.im3=data_avg.plot(ax=self.graphs[3].gca(),cmap='terrain', add_colorbar=False)
         
-        self.graphs[0].gca().figure.colorbar(self.im0, ax=self.graphs[0].gca())
-        self.graphs[1].gca().figure.colorbar(self.im1, ax=self.graphs[1].gca())
-        self.graphs[2].gca().figure.colorbar(self.im2, ax=self.graphs[2].gca())
-        self.graphs[3].gca().figure.colorbar(self.im3, ax=self.graphs[3].gca())
-        
         self.im0.set_clim([self.data_array.min(),self.data_array.max()])
         self.im1.set_clim([self.data_array.min(),self.data_array.max()])
         self.im2.set_clim([self.data_array.min(),self.data_array.max()])
