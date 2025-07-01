@@ -10,6 +10,7 @@ import xarray as xr
 from mpes_tools.right_click_handler import RightClickHandler
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QCursor
+
 class showgraphs(QMainWindow):
     def __init__(self, x, y_arrays,y_arrays_err,names,list_axis,list_plot_fits,initial_parameters):
         super().__init__()
@@ -115,10 +116,46 @@ class showgraphs(QMainWindow):
         initial_par_action.triggered.connect(self.extract_initial_par)
         exctract_menu.addAction(initial_par_action)
         
-        # extract_fit_code_action = QAction('MDC',self)
-        # extract_fit_code_action.triggered.connect(self.extract_fit_code)
-        # exctract_menu.addAction(extract_fit_code_action)
-
+        exctract_menu = menu_bar.addMenu("fit")
+        for i, data in enumerate(self.data_list):
+            fit_action = QAction(data.name, self)
+            # Use a lambda to capture the current `data` in the loop
+            fit_action.triggered.connect(lambda checked, d=data: self.fit(d))
+            exctract_menu.addAction(fit_action)
+        
+    def fit(self, data):
+        coords = {k: data.coords[k].values.tolist() for k in data.coords}
+        dims = data.dims
+        name = data.name
+        data_array = xr.DataArray(
+            data=data.values,
+            dims=dims,
+            coords=coords,
+            name=name
+        )
+        from mpes_tools.fit_panel_single import fit_panel_single
+        graph_window = fit_panel_single(data_array)
+        graph_window.show()
+    #     exctract_menu = menu_bar.addMenu("fit")
+    #     for i in range(len(self.data_list)):
+    #         fit_action = QAction(f'self.data_list[i].name',self)
+    #         fit_action.triggered.connect(self.fit)
+    #         exctract_menu.addAction(fit_action)
+        
+    # def fit(self):
+    #     data = self.data_list[i]
+    #     coords = {k: data.coords[k].values.tolist() for k in data.coords}
+    #     dims = data.dims
+    #     name = data.name
+    #     data_array = xr.DataArray(
+    #         data=np.array({data.values.tolist()}),
+    #         dims={dims},
+    #         coords={coords},
+    #         name=name
+    #     )
+    #     graph_window=fit_panel_single(data_array)
+    #     graph_window.show()
+        
     def extract_initial_par(self):
         print(self.initial_parameters)
     def show_pupup_window(self,canvas,ax):
