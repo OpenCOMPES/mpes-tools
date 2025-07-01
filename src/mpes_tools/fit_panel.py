@@ -16,8 +16,8 @@ from mpes_tools.make_model import make_model
 from mpes_tools.graphs import showgraphs
 import ast
 from mpes_tools.axis_editor import AxisEditor
-
-
+from mpes_tools.insert_row import insert_row
+from scipy.special import expit 
 class fit_panel(QMainWindow):
     def __init__(self,data,panel,t=0,dt=0):
         super().__init__()
@@ -92,6 +92,9 @@ class fit_panel(QMainWindow):
         # Create two checkboxes
         self.checkbox_FD = QCheckBox("Multiply with Fermi Dirac")
         self.checkbox_FD.stateChanged.connect(self.checkbox_FD_changed)
+        
+        self.checkbox_NFD = QCheckBox("Multiply with non thermal Fermi Dirac")
+        self.checkbox_NFD.stateChanged.connect(self.checkbox_NFD_changed)
 
         self.checkbox_Gauss = QCheckBox("Convolve with a Gaussian")
         self.checkbox_Gauss.stateChanged.connect(self.checkbox_Gauss_changed)
@@ -124,7 +127,7 @@ class fit_panel(QMainWindow):
         bigger_layout.addWidget(self.load_button)
         # Create a QListWidget
         self.list_widget = QListWidget()
-        self.list_widget.addItems(["linear","Lorentz", "Gauss", "sinusoid","constant","jump"])
+        self.list_widget.addItems(["linear","Lorentz", "Gauss", "sinusoid","constant","jump","CDW_spectral","CDW_spectral2"])
         self.list_widget.setMaximumSize(120,150)
         self.list_widget.itemClicked.connect(self.item_selected)
 
@@ -237,6 +240,7 @@ class fit_panel(QMainWindow):
         top_lay = QHBoxLayout()
         above_table=QVBoxLayout()
         checkboxes.addWidget(self.checkbox_FD)
+        checkboxes.addWidget(self.checkbox_NFD)
         checkboxes.addWidget(self.checkbox_Gauss)
         checkboxes.addWidget(self.checkbox_offset)
         top_lay.addWidget(self.text_equation)
@@ -262,6 +266,7 @@ class fit_panel(QMainWindow):
         self.function_list=[]
         self.function_names_list=[]
         self.FD_state = False
+        self.NFD_state = False
         self.CV_state = False
         self.t0_state = False
         self.offset_state = False
@@ -326,6 +331,187 @@ class fit_panel(QMainWindow):
         return a*x+b
     def lorentzian(self,x, A, x0, gamma):
         return A / (1 + ((x - x0) / (gamma)) ** 2)
+    def gapped_lorentzian(E, mu, Gamma, Delta):
+        """
+        Lorentzian broadening with a gap (CDW/superconductor).
+        
+        Args:
+            E (array): Energy values (eV)
+            mu (float): Chemical potential (eV)
+            Gamma (float): Quasiparticle width (eV)
+            Delta (float): Gap size (eV)
+        
+        Returns:
+            array: Gapped Lorentzian spectral function
+        """
+        return Gamma / ((E - mu)**2 + Gamma**2 + Delta**2)
+    def gapped_occupation(E, mu, Delta):
+        """
+        Bogoliubov-like occupation factor for a gapped system (CDW/SC).
+        
+        Args:    from scipy.special import expit  # Faster Fermi-Dirac approximation
+            E (array): Energy values (eV)
+            mu (float): Chemical potential (eV)
+            Delta (float): Gap size (eV)
+        
+        Returns:
+            array: Occupation probability (0 to 1)
+        """
+        xi = E - mu  # Energy relative to mu
+        return 0.5 * (1 + xi / np.sqrt(xi**2 + Delta**2))
+
+
+    def cdw_spectral_function(self,x, A, mu, Gamma, Delta, Te):
+        """
+        Full tr-ARPES spectral function for a gapped CDW system (before instrumental convolution).
+        
+        Args:
+            E (array): Energy values (eV)
+            mu (float): Chemical potential (eV)
+            Gamma (float): Quasiparticle width (eV)
+            Delta (float): Gap size (eV)
+            Te (float): Electron temperature (K)
+        
+        Returns:
+            array: Intensity vs. energy (arb. units)
+        """
+        # Gapped Lorentzian (quasiparticle lifetime)
+        xi = x - mu  # Energy relative to mu
+        denominator = xi**2 + Gamma**2 + Delta**2
+        Lor = Gamma / denominator
+        
+        # Gapped occupation factor (Bogoliubov-like)
+        occ = 0.5 * (1 + xi / np.sqrt(xi**2 + Delta**2))
+        
+        # Non-equilibrium Fermi-Dirac distribution
+        kB = 8.617e-5  # Boltzmann constant (eV/K)
+        FD = expit(-xi / (kB * Te))  # ≈ 1/(1 + exp((E-mu)/(kB Te))
+        
+        # Full spectral function: Lor × Occ × FD
+        return A*Lor * occ * FD
+    def cdw_spectral_function2(self,x, A, mu, Gamma, Delta, Te):
+        """
+        Full tr-ARPES spectral function for a gapped CDW system (before instrumental convolution).
+        
+        Args:
+            E (array): Energy values (eV)
+            mu (float): Chemical potential (eV)
+            Gamma (float): Quasiparticle width (eV)
+            Delta (float): Gap size (eV)
+            Te (float): Electron temperature (K)
+        
+        Returns:
+            array: Intensity vs. energy (arb. units)
+        """
+        # Gapped Lorentzian (quasiparticle lifetime)
+        xi = x - mu  # Energy relative to mu
+        denominator = xi**2 + Gamma**2 + Delta**2
+        Lor = Gamma / denominator
+        
+        # Gapped occupation factor (Bogoliubov-like)
+        occ = 0.5 * ( 1+ x / np.sqrt(x**2 - Delta**2))
+        
+        # Non-equilibrium Fermi-Dirac distribution
+        kB = 8.617e-5  # Boltzmann constant (eV/K)
+        FD = expit(-xi / (kB * Te))  # ≈ 1/(1 + exp((E-mu)/(kB Te))
+        
+        # Full spectral function: Lor × Occ × FD
+        return A*Lor * occ * FD
+    
+    # def nonthermal_fd(self,x, T, mu, alpha, tail_weight, tail_type='exponential'):
+    #     """
+    #     Compute a generalized non-thermal Fermi-Dirac distribution.
+        
+    #     Parameters:
+    #     - E: array_like
+    #         Energy array (eV).
+    #     - T: float
+    #         Electronic temperature (Kelvin).
+    #     - mu: float
+    #         Chemical potential (eV), default is 0.
+    #     - alpha: float
+    #         Parameter controlling the strength of the non-thermal tail.
+    #         For exponential tails, this is the decay constant.
+    #     - tail_weight: float
+    #         Relative weight of the non-thermal tail (0 to 1).
+    #     - tail_type: str
+    #         Type of non-thermal tail: 'exponential', 'powerlaw', or 'step'.
+        
+    #     Returns:
+    #     - f(E): array_like
+    #         Distribution function evaluated at E.
+    #     """
+    #     tail_type='exponential'
+    #     k_B = 8.617333262e-5  # eV/K
+        
+    #     # Standard Fermi-Dirac distribution
+    #     f_fd = 1.0 / (1.0 + np.exp((x - mu) / (k_B * T)))
+        
+    #     # Non-thermal tail
+    #     if tail_type == 'exponential':
+    #         tail = np.exp(-alpha * np.abs(x - mu))
+    #     elif tail_type == 'powerlaw':
+    #         # Avoid division by zero
+    #         epsilon = 1e-12
+    #         tail = 1.0 / (np.abs(x - mu) + epsilon) ** alpha
+    #     elif tail_type == 'step':
+    #         # Sharp step at a certain energy, e.g., E = E_step
+    #         E_step = 0.1  # example value, can be parameter
+    #         tail = np.where(x > E_step, 1.0, 0.0)
+    #     else:
+    #         raise ValueError("Unsupported tail_type. Choose 'exponential', 'powerlaw', or 'step'.")
+        
+    #     # Combine with weights
+    #     f_total = (1 - tail_weight) * f_fd + tail_weight * tail
+        
+    #     return f_total
+    def nonthermal_fd(self,x, T, mu, alpha, tail_weight):
+        """
+        Compute a generalized non-thermal Fermi-Dirac distribution.
+        
+        Parameters:
+        - E: array_like
+            Energy array (eV).
+        - T: float
+            Electronic temperature (Kelvin).
+        - mu: float
+            Chemical potential (eV), default is 0.
+        - alpha: float
+            Parameter controlling the strength of the non-thermal tail.
+            For exponential tails, this is the decay constant.
+        - tail_weight: float
+            Relative weight of the non-thermal tail (0 to 1).
+        - tail_type: str
+            Type of non-thermal tail: 'exponential', 'powerlaw', or 'step'.
+        
+        Returns:
+        - f(E): array_like
+            Distribution function evaluated at E.
+        """
+        tail_type='powerlaw'
+        k_B = 8.617333262e-5  # eV/K
+        
+        # Standard Fermi-Dirac distribution
+        f_fd = 1.0 / (1.0 + np.exp((x - mu) / (k_B * T)))
+        
+        # Non-thermal tail
+        if tail_type == 'exponential':
+            tail = np.exp(-alpha * np.abs(x - mu))
+        elif tail_type == 'powerlaw':
+            # Avoid division by zero
+            epsilon = 1e-12
+            tail = 1.0 / (np.abs(x - mu) + epsilon) ** alpha
+        elif tail_type == 'step':
+            # Sharp step at a certain energy, e.g., E = E_step
+            E_step = 0.1  # example value, can be parameter
+            tail = np.where(x > E_step, 1.0, 0.0)
+        else:
+            raise ValueError("Unsupported tail_type. Choose 'exponential', 'powerlaw', or 'step'.")
+        
+        # Combine with weights
+        f_total = (1 - tail_weight) * f_fd + tail_weight * tail
+        
+        return f_total
     def fermi_dirac(self,x, mu, T):
         kb = 8.617333262145 * 10**(-5)  # Boltzmann constant in eV/K
         return 1 / (1 + np.exp((x - mu) / (kb * T)))
@@ -431,33 +617,88 @@ class fit_panel(QMainWindow):
                 item.setFlags(Qt.ItemIsEnabled)  # Make cell uneditable
                 self.table_widget.setItem(pos, col, item)
                 item.setBackground(QBrush(QColor('grey')))
-            c=self.table_widget.rowCount()
-            self.table_widget.insertRow(pos+1)
-            label_item1 = QTableWidgetItem("Fermi level")
-            checkbox_widget = QWidget()
-            checkbox_layout = QHBoxLayout()
-            checkbox_layout.setAlignment(Qt.AlignCenter)
-            checkbox = QCheckBox()
-            checkbox.stateChanged.connect(lambda state, row= pos+1: self.handle_checkbox_state_change(state, row))
-            # print('thecount',c+1)
-            checkbox_layout.addWidget(checkbox)
-            checkbox_widget.setLayout(checkbox_layout)
-            self.table_widget.setCellWidget(pos+1, 3, checkbox_widget)
-            self.table_widget.setVerticalHeaderItem(pos+1, label_item1)
+            # c=self.table_widget.rowCount()
+            # self.table_widget.insertRow(pos+1)
+            # label_item1 = QTableWidgetItem("Fermi level")
+            # checkbox_widget = QWidget()
+            # checkbox_layout = QHBoxLayout()
+            # checkbox_layout.setAlignment(Qt.AlignCenter)
+            # checkbox = QCheckBox()
+            # checkbox.stateChanged.connect(lambda state, row= pos+1: self.handle_checkbox_state_change(state, row))
+            # # print('thecount',c+1)
+            # checkbox_layout.addWidget(checkbox)
+            # checkbox_widget.setLayout(checkbox_layout)
+            # self.table_widget.setCellWidget(pos+1, 3, checkbox_widget)
+            # self.table_widget.setVerticalHeaderItem(pos+1, label_item1)
             
-            self.table_widget.insertRow(pos+2)
-            label_item2 = QTableWidgetItem("Temperature")
-            checkbox_widget = QWidget()
-            checkbox_layout = QHBoxLayout()
-            checkbox_layout.setAlignment(Qt.AlignCenter)
-            checkbox = QCheckBox()
-            checkbox.stateChanged.connect(lambda state, row= pos+2: self.handle_checkbox_state_change(state, row))
-            checkbox_layout.addWidget(checkbox)
-            checkbox_widget.setLayout(checkbox_layout)
-            self.table_widget.setCellWidget(pos+2, 3, checkbox_widget)
-            self.table_widget.setVerticalHeaderItem(pos+2, label_item2)
+            # self.table_widget.insertRow(pos+2)
+            # label_item2 = QTableWidgetItem("Temperature")
+            # checkbox_widget = QWidget()
+            # checkbox_layout = QHBoxLayout()
+            # checkbox_layout.setAlignment(Qt.AlignCenter)
+            # checkbox = QCheckBox()
+            # checkbox.stateChanged.connect(lambda state, row= pos+2: self.handle_checkbox_state_change(state, row))
+            # checkbox_layout.addWidget(checkbox)
+            # checkbox_widget.setLayout(checkbox_layout)
+            # self.table_widget.setCellWidget(pos+2, 3, checkbox_widget)
+            # self.table_widget.setVerticalHeaderItem(pos+2, label_item2)
+            insert_row(self.table_widget, pos+1, 'mu', self.handle_checkbox_state_change)
+            insert_row(self.table_widget, pos+1, 'T', self.handle_checkbox_state_change)
         else:
             self.FD_state = False
+            self.update_equation()
+            # print("Checkbox 1 is unchecked")
+            
+            self.table_widget.removeRow(pos)
+            self.table_widget.removeRow(pos)
+            self.table_widget.removeRow(pos)
+    def checkbox_NFD_changed(self, state):
+        if self.CV_state== True:
+            pos=2
+        else:
+            pos=0
+        if state == Qt.Checked:
+            self.NFD_state = True
+            self.update_equation()
+            self.table_widget.insertRow(pos)
+            label_item = QTableWidgetItem("Fermi")
+            self.table_widget.setVerticalHeaderItem(pos, label_item)
+            for col in range(4):
+                item = QTableWidgetItem('')
+                item.setFlags(Qt.ItemIsEnabled)  # Make cell uneditable
+                self.table_widget.setItem(pos, col, item)
+                item.setBackground(QBrush(QColor('grey')))
+            # c=self.table_widget.rowCount()
+            # self.table_widget.insertRow(pos+1)
+            # label_item1 = QTableWidgetItem("Fermi level")
+            # checkbox_widget = QWidget()
+            # checkbox_layout = QHBoxLayout()
+            # checkbox_layout.setAlignment(Qt.AlignCenter)
+            # checkbox = QCheckBox()
+            # checkbox.stateChanged.connect(lambda state, row= pos+1: self.handle_checkbox_state_change(state, row))
+            # # print('thecount',c+1)
+            # checkbox_layout.addWidget(checkbox)
+            # checkbox_widget.setLayout(checkbox_layout)
+            # self.table_widget.setCellWidget(pos+1, 3, checkbox_widget)
+            # self.table_widget.setVerticalHeaderItem(pos+1, label_item1)
+            insert_row(self.table_widget, pos+1, 'mu', self.handle_checkbox_state_change)
+            insert_row(self.table_widget, pos+1, 'T', self.handle_checkbox_state_change)
+            insert_row(self.table_widget, pos+1, 'tail_weight', self.handle_checkbox_state_change)
+            insert_row(self.table_widget, pos+1, 'alpha', self.handle_checkbox_state_change)
+            
+            # self.table_widget.insertRow(pos+2)
+            # label_item2 = QTableWidgetItem("Temperature")
+            # checkbox_widget = QWidget()
+            # checkbox_layout = QHBoxLayout()
+            # checkbox_layout.setAlignment(Qt.AlignCenter)
+            # checkbox = QCheckBox()
+            # checkbox.stateChanged.connect(lambda state, row= pos+2: self.handle_checkbox_state_change(state, row))
+            # checkbox_layout.addWidget(checkbox)
+            # checkbox_widget.setLayout(checkbox_layout)
+            # self.table_widget.setCellWidget(pos+2, 3, checkbox_widget)
+            # self.table_widget.setVerticalHeaderItem(pos+2, label_item2)
+        else:
+            self.NFD_state = False
             self.update_equation()
             # print("Checkbox 1 is unchecked")
             
@@ -525,6 +766,10 @@ class fit_panel(QMainWindow):
             self.function_selected =self.jump2
         elif item.text()=='sinusoid':
             self.function_selected =self.sinusoid
+        elif item.text()=='CDW_spectral':
+            self.function_selected =self.cdw_spectral_function
+        elif item.text()=='CDW_spectral2':
+            self.function_selected =self.cdw_spectral_function2
     def get_input_from_user(self,parent=None):
         # Create a QDialog instance
         dialog = QDialog(parent)
@@ -579,7 +824,7 @@ class fit_panel(QMainWindow):
                 self.params[header_item.text()].set(value=self.x_f[max_arg].item())
                 item = QTableWidgetItem(str(self.x_f[max_arg].item()))
                 self.table_widget.setItem(row, 1, item)
-            elif "gamma" in header_item.text():
+            elif "gamma"  in header_item.text():
                 self.params[header_item.text()].set(value=0.2)
                 item = QTableWidgetItem(str(0.2))
                 self.table_widget.setItem(row, 1, item)
@@ -692,6 +937,8 @@ class fit_panel(QMainWindow):
             j+=1
         if self.FD_state == True:
             self.mod= self.mod* Model(self.fermi_dirac)
+        if self.NFD_state == True:
+            self.mod= self.mod* Model(self.nonthermal_fd)
         if self.CV_state == True:
             self.mod = CompositeModel(self.mod, Model(self.centered_kernel), self.convolve)
         if self.offset_state==True:
@@ -711,6 +958,8 @@ class fit_panel(QMainWindow):
             j+=1
         if self.FD_state == True:
             self.mod= self.mod* Model(self.fermi_dirac)
+        if self.NFD_state == True:
+            self.mod= self.mod* Model(self.nonthermal_fd)
         if self.CV_state == True:
             self.mod = CompositeModel(self.mod, Model(self.centered_kernel), self.convolve)
         if self.offset_state==True:
@@ -743,6 +992,8 @@ class fit_panel(QMainWindow):
             j+=1
         if self.FD_state == True:
             self.mod= self.mod* Model(self.fermi_dirac)
+        if self.NFD_state == True:
+            self.mod= self.mod* Model(self.nonthermal_fd)
         if self.CV_state == True:
             self.mod = CompositeModel(self.mod, Model(self.centered_kernel), self.convolve)
         if self.offset_state==True:
@@ -813,6 +1064,8 @@ class fit_panel(QMainWindow):
         if self.FD_state == True:
             self.mod= self.mod* Model(self.fermi_dirac)
             initial_parameters['Fermi_Dirac']=True
+        if self.NFD_state == True:
+            self.mod= self.mod* Model(self.nonthermal_fd)
         if self.CV_state == True:
             self.mod = CompositeModel(self.mod, Model(self.centered_kernel), self.convolve)
             initial_parameters['Gaussian_conv']=True
@@ -840,6 +1093,8 @@ class fit_panel(QMainWindow):
             # print('the paramsnames or',pname, par)
             setattr(self, pname, np.zeros((len(self.axs))))
             initial_parameters['params'].append(par.value)
+            min_value=par.min
+            max_value=par.max
             import math
             if math.isinf(par.min):
                 min_value='-inf'    
