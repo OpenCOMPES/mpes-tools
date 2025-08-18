@@ -26,7 +26,7 @@ class AxisEditor:
             for line in ax.lines:
                 x = line.get_xdata()
                 y = line.get_ydata()
-    
+                    
             if len(x) > 0 and len(y) > 0:
                 all_x.append(x)
                 all_y.append(y)

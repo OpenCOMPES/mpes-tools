@@ -18,7 +18,7 @@ from mpes_tools.right_click_handler import RightClickHandler
 from PyQt5.QtGui import QCursor
 import ast
 import xarray as xr
-
+from mpes_tools.insert_row import insert_row
 
 
 class fit_panel_single(QMainWindow):
@@ -392,31 +392,35 @@ fit_errors= {self.result_fit_err}
                 item.setFlags(Qt.ItemIsEnabled)  # Make cell uneditable
                 self.table_widget.setItem(pos, col, item)
                 item.setBackground(QBrush(QColor('grey')))
-            c=self.table_widget.rowCount()
-            self.table_widget.insertRow(pos+1)
-            label_item1 = QTableWidgetItem("Fermi level")
-            checkbox_widget = QWidget()
-            checkbox_layout = QHBoxLayout()
-            checkbox_layout.setAlignment(Qt.AlignCenter)
-            checkbox = QCheckBox()
-            checkbox.stateChanged.connect(lambda state, row= pos+1: self.handle_checkbox_state_change(state, row))
-            # print('thecount',c+1)
-            checkbox_layout.addWidget(checkbox)
-            checkbox_widget.setLayout(checkbox_layout)
-            self.table_widget.setCellWidget(pos+1, 3, checkbox_widget)
-            self.table_widget.setVerticalHeaderItem(pos+1, label_item1)
+            # c=self.table_widget.rowCount()
             
-            self.table_widget.insertRow(pos+2)
-            label_item2 = QTableWidgetItem("Temperature")
-            checkbox_widget = QWidget()
-            checkbox_layout = QHBoxLayout()
-            checkbox_layout.setAlignment(Qt.AlignCenter)
-            checkbox = QCheckBox()
-            checkbox.stateChanged.connect(lambda state, row= pos+2: self.handle_checkbox_state_change(state, row))
-            checkbox_layout.addWidget(checkbox)
-            checkbox_widget.setLayout(checkbox_layout)
-            self.table_widget.setCellWidget(pos+2, 3, checkbox_widget)
-            self.table_widget.setVerticalHeaderItem(pos+2, label_item2)
+            
+            insert_row(self.table_widget, pos+1, 'mu', self.handle_checkbox_state_change)
+            insert_row(self.table_widget, pos+1, 'T', self.handle_checkbox_state_change)
+            # self.table_widget.insertRow(pos+1)
+            # label_item1 = QTableWidgetItem("Fermi level")
+            # checkbox_widget = QWidget()
+            # checkbox_layout = QHBoxLayout()
+            # checkbox_layout.setAlignment(Qt.AlignCenter)
+            # checkbox = QCheckBox()
+            # checkbox.stateChanged.connect(lambda state, row= pos+1: self.handle_checkbox_state_change(state, row))
+            # # print('thecount',c+1)
+            # checkbox_layout.addWidget(checkbox)
+            # checkbox_widget.setLayout(checkbox_layout)
+            # self.table_widget.setCellWidget(pos+1, 3, checkbox_widget)
+            # self.table_widget.setVerticalHeaderItem(pos+1, label_item1)
+            
+            # self.table_widget.insertRow(pos+2)
+            # label_item2 = QTableWidgetItem("Temperature")
+            # checkbox_widget = QWidget()
+            # checkbox_layout = QHBoxLayout()
+            # checkbox_layout.setAlignment(Qt.AlignCenter)
+            # checkbox = QCheckBox()
+            # checkbox.stateChanged.connect(lambda state, row= pos+2: self.handle_checkbox_state_change(state, row))
+            # checkbox_layout.addWidget(checkbox)
+            # checkbox_widget.setLayout(checkbox_layout)
+            # self.table_widget.setCellWidget(pos+2, 3, checkbox_widget)
+            # self.table_widget.setVerticalHeaderItem(pos+2, label_item2)
         else:
             self.FD_state = False
             self.update_equation()
@@ -630,21 +634,20 @@ fit_errors= {self.result_fit_err}
         def zero(x):
             return 0
         self.mod= Model(zero)
+        
+        
+        # self.mod= Model(zero)
         cursors= self.cursor_handler.cursors()
         j=0
         for f in self.function_list:
             self.mod+=Model(f,prefix='f'+str(j)+'_')
-            self.initial_parameters['functions'].append(f.__func__.__name__)
             j+=1
         if self.FD_state == True:
             self.mod= self.mod* Model(self.fermi_dirac)
-            self.initial_parameters['Fermi_Dirac']=True
         if self.CV_state == True:
             self.mod = CompositeModel(self.mod, Model(self.centered_kernel), self.convolve)
-            self.initial_parameters['Gaussian_conv']=True
         if self.offset_state==True:
             self.mod= self.mod+Model(self.offset_function)
-            self.initial_parameters['Offset']=True
         m1=make_model(self.mod, self.table_widget)
         self.mod=m1.current_model()
         self.params=m1.current_params()
@@ -662,6 +665,7 @@ fit_errors= {self.result_fit_err}
         self.axis.plot(self.x_f,out.best_fit,color='red',label='fit')
         self.figure.tight_layout()
         self.canvas.draw()
+        
         self.result_fit_plot = out.best_fit
         self.result_fit={name: param.value for name, param in out.params.items()}
         self.result_fit_err={name: param.stderr for name, param in out.params.items()}
@@ -674,6 +678,50 @@ fit_errors= {self.result_fit_err}
             if math.isinf(par.max):
                 max_value='inf'      
             self.initial_parameters.update({pname: [min_value,par.value,max_value,par.vary]})
+        # cursors= self.cursor_handler.cursors()
+        # j=0
+        # for f in self.function_list:
+        #     self.mod+=Model(f,prefix='f'+str(j)+'_')
+        #     self.initial_parameters['functions'].append(f.__func__.__name__)
+        #     j+=1
+        # if self.FD_state == True:
+        #     self.mod= self.mod* Model(self.fermi_dirac)
+        #     self.initial_parameters['Fermi_Dirac']=True
+        # if self.CV_state == True:
+        #     self.mod = CompositeModel(self.mod, Model(self.centered_kernel), self.convolve)
+        #     self.initial_parameters['Gaussian_conv']=True
+        # if self.offset_state==True:
+        #     self.mod= self.mod+Model(self.offset_function)
+        #     self.initial_parameters['Offset']=True
+        # m1=make_model(self.mod, self.table_widget)
+        # self.mod=m1.current_model()
+        # self.params=m1.current_params()
+        # self.y_f=self.y.isel({self.dim:slice(cursors[0], cursors[1])})
+        # self.x_f=self.y_f[self.dim]
+        # if self.offset_state==True:
+        #     self.params['offset'].set(value=self.y_f.data.min())
+        # # print(self.params)
+        # self.initial_parameters['cursors'].append(cursors[0])
+        # self.initial_parameters['cursors'].append(cursors[1])
+        # self.initial_parameters['cursors_x_values'].append(self.x_f[0].item())
+        # self.initial_parameters['cursors_x_values'].append(self.x_f[-1].item())
+        # out = self.mod.fit(self.y_f, self.params, x=self.x_f)
+        # print(out.fit_report(min_correl=0.25))
+        # self.axis.plot(self.x_f,out.best_fit,color='red',label='fit')
+        # self.figure.tight_layout()
+        # self.canvas.draw()
+        # self.result_fit_plot = out.best_fit
+        # self.result_fit={name: param.value for name, param in out.params.items()}
+        # self.result_fit_err={name: param.stderr for name, param in out.params.items()}
+        # for pname, par in self.params.items():
+        #     print(pname)
+        #     self.initial_parameters['params'].append(par.value)
+        #     import math
+        #     if math.isinf(par.min):
+        #         min_value='-inf'    
+        #     if math.isinf(par.max):
+        #         max_value='inf'      
+        #     self.initial_parameters.update({pname: [min_value,par.value,max_value,par.vary]})
     def get_fit_results(self,initial_parameters):
         def zero(x):
             return 0

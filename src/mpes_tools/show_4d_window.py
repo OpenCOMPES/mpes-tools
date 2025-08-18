@@ -171,7 +171,8 @@ class show_4d_window(QMainWindow):
     def show_pupup_window(self,canvas,ax):
         if ax==self.axis_list[0]:
             menu = QMenu(canvas)
-            action1 = menu.addAction("energy plot")
+            action1 = menu.addAction("energy plot_static")
+            action2 = menu.addAction("energy plot_dyn")
             action = menu.exec_(QCursor.pos())
     
             if action == action1:
@@ -180,11 +181,18 @@ data.loc[{{
     '{self.axes[2]}': slice({self.data_array[self.axes[2]][self.slider1[0].value()].item()}, {self.data_array[self.axes[2]][self.slider1[0].value() + self.slider2[0].value()].item()}),
     '{self.axes[3]}': slice({self.data_array[self.axes[3]][self.slider3[0].value()].item()}, {self.data_array[self.axes[3]][self.slider3[0].value() + self.slider4[0].value()].item()})
 }}].mean(dim=('{self.axes[2]}', '{self.axes[3]}')).T  
+""")        
+            elif action == action2:
+                print(f"""# ENERGY with delay data
+data.loc[{{
+    '{self.axes[2]}': slice({self.data_array[self.axes[2]][self.slider1[0].value()].item()}, {self.data_array[self.axes[2]][self.slider1[0].value() + self.slider2[0].value()].item()})
+}}].mean(dim=('{self.axes[2]}')) , {self.slider3[0].value()},{self.slider4[0].value()}
 """)
 
         elif ax==self.axis_list[1]:
             menu = QMenu(canvas)
-            action1 = menu.addAction("ky plot")
+            action1 = menu.addAction("ky plot_static")
+            action2 = menu.addAction("ky plot_dyn")
             action = menu.exec_(QCursor.pos())
     
             if action == action1:
@@ -194,11 +202,16 @@ data.loc[{{
     '{self.axes[3]}': slice({self.data_array[self.axes[3]][self.slider3[1].value()].item()}, {self.data_array[self.axes[3]][self.slider3[1].value() + self.slider4[1].value()].item()})
 }}].mean(dim=('{self.axes[1]}', '{self.axes[3]}')).T 
 """)
-
-
+            elif action == action2:
+                print(f"""# KY plot with delay
+data.loc[{{
+    '{self.axes[1]}': slice({self.data_array[self.axes[1]][self.slider1[1].value()].item()}, {self.data_array[self.axes[1]][self.slider1[1].value() + self.slider2[1].value()].item()})
+}}].mean(dim=('{self.axes[1]}')) , {self.slider3[1].value()},{self.slider4[1].value()}
+""")
         elif ax==self.axis_list[2]:
             menu = QMenu(canvas)
-            action1 = menu.addAction("kx plot")
+            action1 = menu.addAction("kx plot_static")
+            action2 = menu.addAction("kx plot_dyn")
             action = menu.exec_(QCursor.pos())
     
             if action == action1:
@@ -208,11 +221,17 @@ data.loc[{{
     '{self.axes[3]}': slice({self.data_array[self.axes[3]][self.slider3[2].value()].item()}, {self.data_array[self.axes[3]][self.slider3[2].value() + self.slider4[2].value()].item()})
 }}].mean(dim=('{self.axes[0]}', '{self.axes[3]}')).T  
 """)
-
+            elif action == action2:
+                print(f"""# KX plot with delay
+data.loc[{{
+    '{self.axes[0]}': slice({self.data_array[self.axes[0]][self.slider1[2].value()].item()}, {self.data_array[self.axes[0]][self.slider1[2].value() + self.slider2[2].value()].item()})
+}}].mean(dim=('{self.axes[0]}')) , {self.slider3[2].value()},{self.slider4[2].value()}
+""")
             
         elif ax==self.axis_list[3]:
             menu = QMenu(canvas)
-            action1 = menu.addAction("kx ky plot")
+            action1 = menu.addAction("kx ky plot_static")
+            action2 = menu.addAction("kx ky plot_dyn")
             action = menu.exec_(QCursor.pos())
     
             if action == action1:
@@ -221,8 +240,13 @@ data.loc[{{
     '{self.axes[1]}': slice({self.data_array[self.axes[1]][self.slider1[3].value()].item()}, {self.data_array[self.axes[1]][self.slider1[3].value() + self.slider2[3].value()].item()}),
     '{self.axes[0]}': slice({self.data_array[self.axes[0]][self.slider3[3].value()].item()}, {self.data_array[self.axes[0]][self.slider3[3].value() + self.slider4[3].value()].item()})
 }}].mean(dim=('{self.axes[1]}', '{self.axes[0]}')) 
+""")    
+            elif action == action2:
+                print(f"""# KX-KY plot with delay
+data.loc[{{
+    '{self.axes[1]}': slice({self.data_array[self.axes[1]][self.slider1[3].value()].item()}, {self.data_array[self.axes[1]][self.slider1[3].value() + self.slider2[3].value()].item()})
+}}].mean(dim=('{self.axes[1]}')) , {self.slider3[3].value()},{self.slider4[3].value()}
 """)
-    
 
     def open_graph_kxkydt(self):
         E1=self.data_array[self.axes[2]][self.slider1[0].value()].item()
