@@ -68,6 +68,10 @@ class showgraphs(QMainWindow):
         self.ax_list=[]
         self.data_list=[]
         self.cursor_list=[]
+        
+        handler = RightClickHandler(self.canvas, self.axis,self.show_pupup_window)
+        self.canvas.mpl_connect("button_press_event", handler.on_right_click)
+        self.handler_list.append(handler)
         # Create and add buttons and plots for each y array in a 3x3 layout
         for i, y in enumerate(y_arrays):
             # Create a button to show the plot in a new window
@@ -160,6 +164,43 @@ class showgraphs(QMainWindow):
         print(self.initial_parameters)
     def show_pupup_window(self,canvas,ax):
         # print(f"External callback: clicked subplot ({i},{j})")
+        if ax== self.axis:
+            data = self.list_plot_fits[self.slider.value()][0][0]
+            fit=self.list_plot_fits[self.slider.value()][1][0]
+            coords_data = {k: data.coords[k].values.tolist() for k in data.coords}
+            coords_fit = {k: self.list_axis[1][0].values.tolist() for k in data.coords}
+            dims = data.dims
+            name1 = 'signal at delay = '+ f'{self.x[self.slider.value()]:.2f} fs'
+            name2= 'fit at delay = '+ f'{self.x[self.slider.value()]:.2f} fs'
+            menu = QMenu(canvas)
+            action1 = menu.addAction("plot")
+            action2 = menu.addAction("fit")
+            action = menu.exec_(QCursor.pos())
+
+            if action == action1:
+                    print(f'''
+import xarray as xr
+import numpy as np
+
+data_array = xr.DataArray(
+    data=np.array({data.values.tolist()}),
+    dims={dims},
+    coords={coords_data},
+    name="{name1}"
+)
+''')
+            if action == action2:
+                    print(f'''
+import xarray as xr
+import numpy as np
+
+data_array = xr.DataArray(
+    data=np.array({fit.tolist()}),
+    dims={dims},
+    coords={coords_fit},
+    name="{name2}"
+)
+''')
         for i, ax_item in enumerate(self.ax_list):
             if ax == ax_item:
                 data = self.data_list[i]
