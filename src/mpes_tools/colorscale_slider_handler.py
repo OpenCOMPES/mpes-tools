@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLabel,QHBoxLayout,QGridLayout,QLineEdit,QCheckBox,QInputDialog
-from superqt import QRangeSlider
+# from superqt import QRangeSlider
+from superqt import QDoubleRangeSlider
 from PyQt5.QtCore import Qt
 import numpy as np
 import matplotlib.pyplot as plt
@@ -44,7 +45,9 @@ class colorscale_slider(QWidget):
         self.input_vmin.setPlaceholderText("Value")
         self.input_vmin.setFixedWidth(40)
         self.input_vmin.editingFinished.connect(self.value_change_vmin)
-        self.slider = QRangeSlider(Qt.Vertical)
+        
+        self.slider = QDoubleRangeSlider(Qt.Vertical)
+        # self.slider = QRangeSlider(Qt.Vertical)
         self.slider.setFixedWidth(15)
         self.slider.setMinimum(int(1 * self.cmin))
         self.slider.setMaximum(int(1.5* self.cmax))

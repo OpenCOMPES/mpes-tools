@@ -159,7 +159,20 @@ class showgraphs(QMainWindow):
     #     )
     #     graph_window=fit_panel_single(data_array)
     #     graph_window.show()
-        
+    def get_fits(self):     
+        fit_list=[]
+        for i,data in enumerate(self.data_list):
+            coords = {k: data.coords[k].values.tolist() for k in data.coords}
+            dims = data.dims
+            name = data.name if data.name else f"data_{i}"
+            data_array = xr.DataArray(
+                data=np.array({data.values.tolist()}),
+                dims={dims},
+                coords={coords},
+                name="{name}"
+            )
+            fit_list.append(data_array)
+        return fit_list
     def extract_initial_par(self):
         print(self.initial_parameters)
     def show_pupup_window(self,canvas,ax):

@@ -18,6 +18,7 @@ import ast
 from mpes_tools.axis_editor import AxisEditor
 from mpes_tools.insert_row import insert_row
 from scipy.special import expit 
+import xarray as xr
 class fit_panel(QMainWindow):
     def __init__(self,data,panel,t=0,dt=0):
         super().__init__()
@@ -1249,6 +1250,77 @@ class fit_panel(QMainWindow):
         sg=showgraphs(self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-dt],fit_results,fit_results_err,names,list_axis,list_plot_fits,initial_parameters)
         sg.show()
         self.graph_windows.append(sg) 
+        
+    def get_fit_data(self,initial_parameters) :  
+        data_list=[]
+        list_plot_fits=[]
+        fixed_list=[]
+        names=[]
+        fit_results=[]
+        fit_results_err=[]
+        def zero(x):
+            return 0
+        axs=self.data[self.data.dims[1]].data
+        dt=initial_parameters['delta_delay']
+        cursors=initial_parameters['cursors']
+        mod=Model(zero)
+        for i,f in enumerate(initial_parameters['functions']):
+            mod+=Model(getattr(self, f),prefix='f'+str(i)+'_')
+        if  initial_parameters['Fermi_Dirac']:
+            mod=mod*Model(self.fermi_dirac)
+        if initial_parameters['Gaussian_conv']:
+            mod = CompositeModel(mod, Model(self.centered_kernel), self.convolve)
+        if initial_parameters['Offset']:
+            mod= mod+Model(self.offset_function)
+        params=mod.make_params()
+        for pname, par in params.items():
+            params[pname].set(min=float(initial_parameters[pname][0]))
+            params[pname].set(value=initial_parameters[pname][1])
+            params[pname].set(max=float(initial_parameters[pname][2]))
+            params[pname].vary=initial_parameters[pname][3]
+        for pname, par in params.items():
+            setattr(self, pname, np.zeros(len(axs)))
+        for i in range(len(axs)-dt):
+            y=self.data.isel({self.data.dims[1]:slice(i, i+dt+1)}).sum(dim=self.data.dims[1])
+            y_f=y.isel({self.dim:slice(cursors[0], cursors[1])})
+            x_f=y_f[self.dim]
+            list_axis=[[y[self.dim]],[x_f]]        
+            out = mod.fit(y_f, params, x=x_f)
+            list_plot_fits.append([[y],[out.best_fit]])
+            for pname, par in params.items():
+                array=getattr(self, pname)
+                array[i]=out.best_values[pname]
+                setattr(self, pname,array)
+                
+                err_array = getattr(self, f"{pname}_err",np.zeros_like(array))
+                stderr = out.params[pname].stderr
+                err_array[i] = stderr
+                setattr(self, f"{pname}_err", err_array)
+        if dt>0:
+            for pname, par in params.items():
+                fit_results.append(getattr(self, pname)[:-dt])
+                fit_results_err.append(getattr(self, f"{pname}_err")[:-dt]) 
+                names.append(pname)
+        else:
+            for pname, par in params.items():
+                fit_results.append(getattr(self, pname))
+                fit_results_err.append(getattr(self, f"{pname}_err"))
+                names.append(pname)
+        x=self.data[self.data.dims[1]][:len(self.data[self.data.dims[1]])-dt]
+        y_arrays=fit_results
+        for i, y in enumerate(y_arrays):
+            # Create a button to show the plot in a new window
+            self.dim=x.dims[0]
+            self.x = x.data
+            data_array = xr.DataArray(
+                data=y,
+                dims=[self.dim],                # e.g., 'energy', 'time', etc.
+                coords={self.dim: self.x},
+                name=names[i]                      # Optional: give it a name (like the plot title)
+            )
+            data_list.append(data_array)
+        return data_list    
+    
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = fit_panel()
